@@ -1,0 +1,5 @@
+netmon.egg-info/*
+venv
+# genrate gitignore content
+__pycache__/
+# https://www.toptal.com/developers/gitignore/api/python
