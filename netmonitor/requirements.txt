@@ -7,4 +7,5 @@ scapy>=2.4.5
 mitmproxy>=9.0.1
 requests>=2.26.0
 click>=8.0.0
+netifaces
 pywin32>=305; platform_system=='Windows'

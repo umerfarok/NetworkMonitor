@@ -1,4 +1,5 @@
 netmon.egg-info/*
+netmonitor.egg-info/*
 venv
 # genrate gitignore content
 __pycache__/
