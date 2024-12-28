@@ -1,0 +1,111 @@
+2024-12-28 16:39:29,756 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.100.8:5000
+2024-12-28 16:39:29,757 - INFO - [33mPress CTRL+C to quit[0m
+2024-12-28 16:39:29,768 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:29,768 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:29,778 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:29,778 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:29,778 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:29,778 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:34,796 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:34,801 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:34,803 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:34,804 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:34,811 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:34,812 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:39,821 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:39,827 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:39,829 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:39,830 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:39,837 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:39,838 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:44,846 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:44,854 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:44,854 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:44,862 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:44,871 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:44,871 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:49,747 - INFO - 127.0.0.1 - - [28/Dec/2024 16:39:49] "[33mGET /health HTTP/1.1[0m" 404 -
+2024-12-28 16:39:49,814 - INFO - 127.0.0.1 - - [28/Dec/2024 16:39:49] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2024-12-28 16:39:49,896 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:49,896 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:49,933 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:49,933 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:49,934 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:49,934 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:54,949 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:54,959 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:54,959 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:54,966 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:54,975 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:54,976 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:39:59,983 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:59,992 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:59,992 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:39:59,992 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:00,000 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:00,001 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:05,017 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:05,018 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:05,026 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:05,026 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:05,033 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:05,034 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:10,043 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:10,049 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:10,050 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:10,051 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:10,057 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:10,058 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:15,066 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:15,074 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:15,075 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:15,075 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:15,082 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:15,082 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:20,091 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:20,097 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:20,098 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:20,098 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:20,106 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:20,106 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:25,114 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:25,121 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:25,123 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:25,123 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:25,130 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:25,130 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:30,145 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:30,148 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:30,155 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:30,155 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:30,164 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:30,164 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:35,173 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:35,181 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:35,181 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:35,182 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:35,210 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:35,210 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:40,227 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:40,227 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:40,298 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:40,299 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:40,299 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:40,299 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:45,362 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:45,362 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:45,485 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:45,485 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
+2024-12-28 16:40:45,487 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:40:45,487 - ERROR - Error scanning network: Could not get IP for interface None
+2024-12-28 16:50:56,283 - INFO - Network monitoring started
+2024-12-28 16:50:56,308 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.100.8:5000
+2024-12-28 16:50:56,309 - INFO - [33mPress CTRL+C to quit[0m
+2024-12-28 16:50:56,365 - INFO - Scanning subnet: 192.168.100.0/24
+2024-12-28 16:50:56,382 - INFO - Scanning subnet: 192.168.100.0/24

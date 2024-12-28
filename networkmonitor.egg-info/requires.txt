@@ -1,11 +1,7 @@
-
 flask>=2.0.1
 flask-cors>=3.0.10
 psutil>=5.8.0
-ifaddr>=0.1.7
 scapy>=2.4.5
-mitmproxy>=9.0.1
 requests>=2.26.0
 click>=8.0.0
-netifaces
-pywin32>=305; platform_system=='Windows'
+ifaddr>=0.1.7

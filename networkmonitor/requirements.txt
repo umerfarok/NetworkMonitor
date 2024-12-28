@@ -1,0 +1,13 @@
+# Common dependencies
+requests>=2.25.1
+psutil>=5.8.0
+scapy>=2.4.5
+ifaddr>=0.1.7
+
+# Windows-specific dependencies
+pywin32>=305; platform_system=='Windows'
+wmi>=1.5.1; platform_system=='Windows'
+
+# Use precompiled wheel for netifaces on Windows
+netifaces>=0.11.0; platform_system!='Windows'
+netifaces-0.11.0-cp39-cp39-win_amd64.whl; platform_system=='Windows'

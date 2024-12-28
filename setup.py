@@ -1,25 +1,34 @@
 from setuptools import setup, find_packages
+import platform
+
+# Base dependencies
+install_requires = [
+    "flask>=2.0.1",
+    "flask-cors>=3.0.10",
+    "psutil>=5.8.0",
+    "scapy>=2.4.5",
+    "requests>=2.26.0",
+    "click>=8.0.0",
+    "ifaddr>=0.1.7",
+]
+
+# Add Windows-specific dependencies
+if platform.system() == "Windows":
+    install_requires.extend([
+        "pywin32>=305",
+        "wmi>=1.5.1",
+    ])
 
 setup(
-    name="netmonitor",  # Changed back to netmonitor
+    name="networkmonitor",
     version="0.1.0",
-    packages=find_packages(),  # This will find all packages
+    description="Network monitoring and bandwidth control tool",
+    packages=find_packages(),
     include_package_data=True,
-    install_requires=[
-        "flask>=2.0.1",
-        "flask-cors>=3.0.10",
-        "psutil>=5.8.0",
-        "scapy>=2.4.5",
-        "mitmproxy>=9.0.1",
-        "requests>=2.26.0",
-        "click>=8.0.0",
-        "ifaddr>=0.1.7",
-        "wmi>=1.5.1; platform_system=='Windows'",
-        "pywin32>=305; platform_system=='Windows'"
-    ],
+    install_requires=install_requires,
     entry_points={
-        "console_scripts": [
-            "netmonitor=netmonitor.cli:main"  # Changed back to netmonitor
+        'console_scripts': [
+            'networkmonitor=networkmonitor.cli:main',
         ],
     },
     python_requires=">=3.8",

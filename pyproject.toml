@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "networkmonitor"
+version = "0.1.0"
+description = "Network monitoring and bandwidth control tool"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+dependencies = [
+    "flask>=2.0.1",
+    "flask-cors>=3.0.10",
+    "psutil>=5.8.0",
+    "scapy>=2.4.5",
+    "requests>=2.26.0",
+    "click>=8.0.0",
+    "ifaddr>=0.1.7",
+]
+
+[tool.setuptools]
+packages = ["networkmonitor"]
+
+[project.scripts]
+networkmonitor = "networkmonitor.cli:main"

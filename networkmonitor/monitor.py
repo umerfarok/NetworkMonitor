@@ -8,11 +8,12 @@ from scapy.all import ARP, Ether, srp
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
+import ifaddr  # Using ifaddr instead of netifaces
+import requests
 import threading
 import queue
-import netifaces
-import requests
+import os  # Add this import
 
 @dataclass
 class Device:
@@ -43,6 +44,17 @@ class NetworkMonitor:
         self.speed_tracking = {}
         self.device_groups = {"unlimited": [], "limited": []}
         self.speed_update_queue = queue.Queue()
+        
+        # Set system commands based on OS
+        if self.os_type == "Windows":
+            self.ipconfig_path = self._get_windows_command_path("ipconfig.exe")
+            self.netsh_path = self._get_windows_command_path("netsh.exe")
+
+    def _get_windows_command_path(self, command):
+        """Get full path for Windows system commands"""
+        system32 = os.path.join(os.environ['SystemRoot'], 'System32')
+        command_path = os.path.join(system32, command)
+        return command_path if os.path.exists(command_path) else command
 
     def setup_logging(self):
         logging.basicConfig(
@@ -54,30 +66,100 @@ class NetworkMonitor:
             ]
         )
 
+    def get_interfaces(self) -> List[Dict]:
+        """Get all network interfaces"""
+        interfaces = []
+        adapters = ifaddr.get_adapters()
+        
+        for adapter in adapters:
+            for ip in adapter.ips:
+                # Only handle IPv4
+                if isinstance(ip.ip, str):
+                    interfaces.append({
+                        'name': adapter.nice_name,
+                        'ip': ip.ip,
+                        'network_mask': ip.network_bits if hasattr(ip, 'network_bits') else 24,
+                        'stats': self._get_interface_stats(adapter.nice_name)
+                    })
+        return interfaces
+
     def get_wifi_interfaces(self) -> List[str]:
         """Get list of WiFi interfaces"""
         wifi_interfaces = []
         try:
             if self.os_type == "Windows":
-                output = subprocess.check_output("netsh wlan show interfaces", shell=True).decode()
+                output = subprocess.check_output([self.netsh_path, "wlan", "show", "interfaces"], 
+                                              text=True, 
+                                              creationflags=subprocess.CREATE_NO_WINDOW)
                 if "Name" in output:
                     for line in output.split('\n'):
                         if "Name" in line:
                             wifi_interfaces.append(line.split(":")[1].strip())
             else:  # Linux/MacOS
-                interfaces = netifaces.interfaces()
+                interfaces = self.get_interfaces()
                 for interface in interfaces:
-                    if interface.startswith(('wlan', 'wifi', 'wi-fi', 'wl')):
-                        wifi_interfaces.append(interface)
+                    if interface['name'].startswith(('wlan', 'wifi', 'wi-fi', 'wl')):
+                        wifi_interfaces.append(interface['name'])
         except Exception as e:
             logging.error(f"Error getting WiFi interfaces: {e}")
         return wifi_interfaces
+
+    def get_default_interface(self) -> str:
+        """Get default network interface"""
+        try:
+            if self.os_type == "Windows":
+                output = subprocess.check_output([self.ipconfig_path], 
+                                              text=True, 
+                                              creationflags=subprocess.CREATE_NO_WINDOW)
+                for line in output.split('\n'):
+                    if "Wireless LAN adapter" in line:
+                        return line.split("adapter")[-1].strip().strip(':')
+                    # Fallback to first Ethernet adapter if no wireless
+                    elif "Ethernet adapter" in line:
+                        return line.split("adapter")[-1].strip().strip(':')
+            else:
+                # Get default interface on Linux/MacOS using ifaddr
+                adapters = ifaddr.get_adapters()
+                for adapter in adapters:
+                    for ip in adapter.ips:
+                        if isinstance(ip.ip, str) and not ip.ip.startswith('127.'):
+                            return adapter.nice_name
+        except Exception as e:
+            logging.error(f"Error getting default interface: {e}")
+        return None
+
+    def get_interface_ip(self, interface: str) -> str:
+        """Get IP address of specified interface"""
+        try:
+            if self.os_type == "Windows":
+                output = subprocess.check_output([self.ipconfig_path], 
+                                              text=True,
+                                              creationflags=subprocess.CREATE_NO_WINDOW)
+                current_adapter = None
+                for line in output.split('\n'):
+                    if interface in line:
+                        current_adapter = interface
+                    elif current_adapter and "IPv4 Address" in line:
+                        return line.split(":")[-1].strip().strip('(Preferred)')
+            else:
+                addrs = ifaddr.get_adapters()
+                for adapter in addrs:
+                    if adapter.nice_name == interface:
+                        for ip in adapter.ips:
+                            if isinstance(ip.ip, str):
+                                return ip.ip
+        except Exception as e:
+            logging.error(f"Error getting interface IP: {e}")
+        return None
 
     def get_connected_devices(self, interface: str = None) -> List[Device]:
         """Scan network for connected devices"""
         try:
             if not interface:
                 interface = self.get_default_interface()
+            
+            if not interface:
+                raise Exception("No valid network interface found")
 
             # Get subnet for scanning
             ip = self.get_interface_ip(interface)
@@ -129,47 +211,9 @@ class NetworkMonitor:
             logging.error(f"Error scanning network: {e}")
             return []
 
-    def get_default_interface(self) -> str:
-        """Get default network interface"""
-        try:
-            if self.os_type == "Windows":
-                # Get default interface on Windows
-                result = subprocess.check_output("ipconfig", shell=True).decode()
-                for line in result.split('\n'):
-                    if "Wireless LAN adapter" in line:
-                        return line.split("adapter")[-1].strip().strip(':')
-            else:
-                # Get default interface on Linux/MacOS
-                gateways = netifaces.gateways()
-                if 'default' in gateways and netifaces.AF_INET in gateways['default']:
-                    return gateways['default'][netifaces.AF_INET][1]
-        except Exception as e:
-            logging.error(f"Error getting default interface: {e}")
-        return None
-
-    def get_interface_ip(self, interface: str) -> str:
-        """Get IP address of specified interface"""
-        try:
-            if self.os_type == "Windows":
-                output = subprocess.check_output(f"ipconfig", shell=True).decode()
-                current_adapter = None
-                for line in output.split('\n'):
-                    if interface in line:
-                        current_adapter = interface
-                    elif current_adapter and "IPv4 Address" in line:
-                        return line.split(":")[-1].strip()
-            else:
-                addrs = netifaces.ifaddresses(interface)
-                if netifaces.AF_INET in addrs:
-                    return addrs[netifaces.AF_INET][0]['addr']
-        except Exception as e:
-            logging.error(f"Error getting interface IP: {e}")
-        return None
-
     def get_subnet(self, ip: str) -> str:
         """Get subnet from IP address"""
         try:
-            # Simple subnet calculation - assumes /24 network
             return '.'.join(ip.split('.')[:-1]) + '.0'
         except Exception as e:
             logging.error(f"Error getting subnet: {e}")
@@ -189,7 +233,6 @@ class NetworkMonitor:
             if mac in self.mac_vendor_cache:
                 return self.mac_vendor_cache[mac]
 
-            # Format MAC address and get first 6 characters (OUI)
             mac = mac.replace(':', '').upper()[:6]
             response = requests.get(f'https://api.macvendors.com/{mac}')
             
@@ -205,17 +248,13 @@ class NetworkMonitor:
         """Get WiFi signal strength for device"""
         try:
             if self.os_type == "Windows":
-                output = subprocess.check_output("netsh wlan show interfaces", shell=True).decode()
+                output = subprocess.check_output([self.netsh_path, "wlan", "show", "interfaces"], 
+                                              text=True,
+                                              creationflags=subprocess.CREATE_NO_WINDOW)
                 if mac.replace(':', '-').upper() in output:
                     for line in output.split('\n'):
                         if "Signal" in line:
                             return int(line.split(':')[1].strip().strip('%'))
-            else:  # Linux
-                output = subprocess.check_output(f"iwconfig", shell=True).decode()
-                if mac.upper() in output:
-                    for line in output.split('\n'):
-                        if "Signal level" in line:
-                            return int(line.split('=')[1].split()[0])
         except:
             pass
         return None
@@ -228,7 +267,6 @@ class NetworkMonitor:
         hostname = (hostname or "").lower()
         vendor = (vendor or "").lower()
 
-        # Define device type patterns
         patterns = {
             "smartphone": ["iphone", "android", "phone", "samsung", "huawei", "xiaomi"],
             "laptop": ["laptop", "macbook", "notebook", "dell", "lenovo", "hp", "asus"],
@@ -264,7 +302,6 @@ class NetworkMonitor:
         while not self._stop_event.is_set():
             try:
                 self.get_connected_devices()
-                # Calculate current speeds
                 self._update_device_speeds()
                 time.sleep(5)  # Scan every 5 seconds
             except Exception as e:
@@ -274,13 +311,9 @@ class NetworkMonitor:
     def _update_device_speeds(self):
         """Update current speeds for all devices"""
         try:
-            # Get network interface statistics
             stats = psutil.net_io_counters(pernic=True)
             for ip, device in self.devices.items():
                 if device.status == "active":
-                    # Calculate speed based on bytes sent/received
-                    # This is a simplified calculation - you might want to implement
-                    # more sophisticated speed tracking
                     total_bytes = sum(s.bytes_sent + s.bytes_recv for s in stats.values())
                     device.current_speed = total_bytes / 1_000_000  # Convert to Mbps
         except Exception as e:
@@ -317,109 +350,3 @@ class NetworkMonitor:
             },
             "total_bandwidth": sum(d.current_speed for d in active_devices)
         }
-
-    def limit_bandwidth(self, ip: str, limit: float) -> bool:
-        try:
-            if self.os_type == "Linux":
-                self._limit_linux(ip, limit)
-            elif self.os_type == "Darwin":
-                self._limit_macos(ip, limit)
-            elif self.os_type == "Windows":
-                self._limit_windows(ip, limit)
-                
-            # Update device speed limit
-            if ip in self.devices:
-                self.devices[ip].speed_limit = limit
-                
-            return True
-        except Exception as e:
-            logging.error(f"Bandwidth limit failed: {str(e)}")
-            return False
-
-    def _limit_linux(self, ip: str, limit: float):
-        commands = [
-            f"tc qdisc add dev {self.interface} root handle 1: htb",
-            f"tc class add dev {self.interface} parent 1: classid 1:1 htb rate {limit}mbit",
-            f"tc filter add dev {self.interface} protocol ip parent 1: prio 1 u32 match ip dst {ip} flowid 1:1"
-        ]
-        for cmd in commands:
-            subprocess.run(cmd, shell=True, check=True)
-
-    def _limit_macos(self, ip: str, limit: float):
-        commands = [
-            "pfctl -e",
-            f"echo 'dummynet in proto tcp from any to {ip} pipe 1' | pfctl -f -",
-            f"dnctl pipe 1 config bw {limit}Mbit/s"
-        ]
-        for cmd in commands:
-            subprocess.run(cmd, shell=True, check=True)
-
-    def _limit_windows(self, ip: str, limit: float):
-        # Implement Windows-specific bandwidth limiting
-        interface = self.interface
-        commands = [
-            f"netsh interface ipv4 set subinterface \"{interface}\" mtu={int(limit * 1000)} store=persistent",
-            f"netsh interface ipv4 set subinterface \"{interface}\" mtu={int(limit * 1000)}"
-        ]
-        for cmd in commands:
-            subprocess.run(cmd, shell=True, check=True)
-
-    def remove_limit(self, ip: str) -> bool:
-        try:
-            # Remove speed limit from device
-            if ip in self.devices:
-                self.devices[ip].speed_limit = None
-                
-            if self.os_type == "Linux":
-                subprocess.run(f"tc qdisc del dev {self.interface} root", shell=True, check=True)
-            elif self.os_type == "Darwin":
-                subprocess.run("pfctl -F all -f /etc/pf.conf", shell=True, check=True)
-            elif self.os_type == "Windows":
-                interface = self.interface
-                subprocess.run(f"netsh interface ipv4 set subinterface \"{interface}\" mtu=1500 store=persistent", shell=True, check=True)
-                subprocess.run(f"netsh interface ipv4 set subinterface \"{interface}\" mtu=1500", shell=True, check=True)
-                
-            return True
-        except Exception as e:
-            logging.error(f"Remove limit failed: {str(e)}")
-            return False
-
-    def _get_interface_stats(self, interface: str) -> Dict:
-        try:
-            stats = psutil.net_io_counters(pernic=True)[interface]
-            return {
-                'bytes_sent': stats.bytes_sent,
-                'bytes_recv': stats.bytes_recv,
-                'packets_sent': stats.packets_sent,
-                'packets_recv': stats.packets_recv,
-                'errin': stats.errin,
-                'errout': stats.errout,
-                'dropin': stats.dropin,
-                'dropout': stats.dropout
-            }
-        except:
-            return {}
-
-    def _get_hostname(self, ip: str) -> Optional[str]:
-        try:
-            return socket.gethostbyaddr(ip)[0]
-        except:
-            return None
-
-    def _get_vendor(self, mac: str) -> Optional[str]:
-        try:
-            # First 6 characters of MAC address represent the vendor
-            vendor_prefix = mac[:8].upper().replace(':', '')
-            # This would normally query a MAC address vendor database
-            return "Unknown Vendor"
-        except:
-            return None
-
-    def _get_subnet(self, interface: str) -> Optional[str]:
-        adapters = ifaddr.get_adapters()
-        for adapter in adapters:
-            if adapter.nice_name == interface:
-                for ip in adapter.ips:
-                    if isinstance(ip.ip, str):
-                        return ip.ip
-        return None

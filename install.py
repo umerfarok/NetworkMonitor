@@ -118,7 +118,7 @@ def create_shortcut():
             f.write('@echo off\n')
             f.write(f'call "{venv_activate}"\n')
             f.write('start http://localhost:5000\n')
-            f.write('netmonitor start\n')
+            f.write('networkmonitor start\n')
             f.write('pause\n')
             
         print(f"Created shortcut at: {shortcut_path}")
@@ -150,7 +150,7 @@ def main():
             
         print("\nInstallation complete!")
         print("\nYou can start Network Monitor by:")
-        print("1. Running 'netmonitor start' in terminal")
+        print("1. Running 'networkmonitor start' in terminal")
         print("2. Using the desktop shortcut (NetworkMonitor.bat)")
         
         input("\nPress Enter to exit...")
