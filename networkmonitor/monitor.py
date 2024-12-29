@@ -350,3 +350,48 @@ class NetworkMonitor:
             },
             "total_bandwidth": sum(d.current_speed for d in active_devices)
         }
+    def limit_device_speed(self, ip, speed_limit):
+        """Limit device speed (in Mbps)"""
+        try:
+            # Implement speed limiting using `tc` command (Linux) or `netsh` (Windows)
+            if self.os_type == "Windows":
+                # Windows implementation (simplified, may require admin privileges)
+                command = f"netsh interface set interface {ip} throttled {speed_limit}"
+                subprocess.check_output(command, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                # Linux implementation (simplified, may require sudo)
+                command = f"tc qdisc add dev {self.get_default_interface()} handle ffff: ingress; tc filter add dev {self.get_default_interface()} parent ffff: protocol ip handle 1 u32 match ip dst {ip} flowid 1:1; tc qdisc add dev {self.get_default_interface()} parent 1:1 handle 10: tbf rate {speed_limit}mbit burst 100kb latency 50ms"
+                subprocess.check_output(command, shell=True)
+            return True
+        except Exception as e:
+            logging.error(f"Error limiting device speed: {e}")
+            return False
+
+    def block_device(self, ip):
+        """Block (Disconnect) a device"""
+        try:
+            # Implement device blocking using `iptables` (Linux) or `netsh` (Windows)
+            if self.os_type == "Windows":
+                # Windows implementation (simplified, may require admin privileges)
+                command = f"netsh advfirewall firewall add rule name=Block_{ip} dir=in interface=any action=block remoteip={ip}"
+                subprocess.check_output(command, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                # Linux implementation (simplified, may require sudo)
+                command = f"iptables -A INPUT -s {ip} -j DROP"
+                subprocess.check_output(command, shell=True)
+            return True
+        except Exception as e:
+            logging.error(f"Error blocking device: {e}")
+            return False
+
+    def rename_device(self, ip, new_name):
+        """Rename a device (update hostname)"""
+        try:
+            device = self.devices.get(ip)
+            if device:
+                device.hostname = new_name
+                return True
+            return False
+        except Exception as e:
+            logging.error(f"Error renaming device: {e}")
+            return False

@@ -1,3 +1,4 @@
+// Import necessary dependencies
 import React, { useState, useEffect } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -29,9 +30,8 @@ import {
   Wifi as WifiIcon,
   WifiOff as WifiOffIcon,
   Speed as SpeedIcon,
-  Delete as DeleteIcon,
-  Settings as SettingsIcon,
-  NetworkCheck as NetworkCheckIcon,
+  Block as BlockIcon,
+  Edit as EditIcon,
   Refresh as RefreshIcon,
   DragIndicator as DragIndicatorIcon,
 } from '@mui/icons-material';
@@ -67,7 +67,13 @@ const theme = createTheme({
 });
 
 // Device Card Component with Drag and Drop
-const DeviceCard = ({ device, onLimitChange, onDelete, onDrag }) => {
+const DeviceCard = ({
+  device,
+  onLimitChange,
+  onBlock,
+  onRename,
+  onDrag,
+}) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'device',
     item: { id: device.ip, device },
@@ -84,9 +90,9 @@ const DeviceCard = ({ device, onLimitChange, onDelete, onDrag }) => {
       transition={{ duration: 0.3 }}
       style={{ opacity: isDragging ? 0.5 : 1, cursor: 'move' }}
     >
-      <Card 
-        sx={{ 
-          mb: 2, 
+      <Card
+        sx={{
+          mb: 2,
           bgcolor: device.status === 'active' ? 'background.paper' : 'action.disabledBackground',
           '&:hover': { boxShadow: 6 },
           transition: 'box-shadow 0.3s',
@@ -98,10 +104,11 @@ const DeviceCard = ({ device, onLimitChange, onDelete, onDrag }) => {
               <DragIndicatorIcon color="action" />
             </Grid>
             <Grid item>
-              {device.status === 'active' ? 
-                <WifiIcon color="primary" /> : 
+              {device.status === 'active' ? (
+                <WifiIcon color="primary" />
+              ) : (
                 <WifiOffIcon color="error" />
-              }
+              )}
             </Grid>
             <Grid item xs>
               <Typography variant="h6">{device.hostname || device.ip}</Typography>
@@ -118,8 +125,8 @@ const DeviceCard = ({ device, onLimitChange, onDelete, onDrag }) => {
               <Typography variant="body2" gutterBottom>
                 Current Speed: {device.currentSpeed?.toFixed(1)} Mbps
               </Typography>
-              <LinearProgress 
-                variant="determinate" 
+              <LinearProgress
+                variant="determinate"
                 value={(device.currentSpeed / (device.speedLimit || 100)) * 100}
                 sx={{ mb: 1, height: 8, borderRadius: 4 }}
               />
@@ -135,12 +142,11 @@ const DeviceCard = ({ device, onLimitChange, onDelete, onDrag }) => {
                   />
                 </Grid>
                 <Grid item>
-                  <IconButton 
-                    size="small" 
-                    onClick={() => onDelete(device.ip)}
-                    color="error"
-                  >
-                    <DeleteIcon />
+                  <IconButton size="small" onClick={() => onBlock(device.ip)} color="error">
+                    <BlockIcon />
+                  </IconButton>
+                  <IconButton size="small" onClick={() => onRename(device.ip)} color="primary">
+                    <EditIcon />
                   </IconButton>
                 </Grid>
               </Grid>
@@ -153,7 +159,7 @@ const DeviceCard = ({ device, onLimitChange, onDelete, onDrag }) => {
 };
 
 // Speed Group Component with Drop functionality
-const SpeedGroup = ({ title, devices, onDrop }) => {
+const SpeedGroup = ({ title, devices, onDrop, onLimitChange, onBlock, onRename }) => {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'device',
     drop: (item) => onDrop(item.device, title),
@@ -181,8 +187,9 @@ const SpeedGroup = ({ title, devices, onDrop }) => {
         <DeviceCard
           key={device.ip}
           device={device}
-          onLimitChange={(ip, limit) => console.log('Limit changed:', ip, limit)}
-          onDelete={(ip) => console.log('Delete:', ip)}
+          onLimitChange={onLimitChange}
+          onBlock={onBlock}
+          onRename={onRename}
         />
       ))}
     </Paper>
@@ -197,7 +204,7 @@ const NetworkDashboard = () => {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
   const [speedGroups, setSpeedGroups] = useState({
     unlimited: [],
-    limited: []
+    limited: [],
   });
   const [chartData, setChartData] = useState([]);
 
@@ -292,7 +299,7 @@ const NetworkDashboard = () => {
       const response = await fetch('http://localhost:5000/api/device/limit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ip, limit })
+        body: JSON.stringify({ ip, limit }),
       });
       const data = await response.json();
       if (data.success) {
@@ -304,39 +311,55 @@ const NetworkDashboard = () => {
     }
   };
 
-  const handleRemoveLimit = async (ip) => {
+  const handleBlockDevice = async (ip) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/device/limit/${ip}`, {
-        method: 'DELETE'
+      const response = await fetch('http://localhost:5000/api/device/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip }),
       });
       const data = await response.json();
       if (data.success) {
-        showNotification(`Speed limit removed for ${ip}`, 'success');
+        showNotification(`Device ${ip} blocked`, 'success');
         fetchDevices();
       }
     } catch (error) {
-      showNotification('Failed to remove speed limit', 'error');
+      showNotification('Failed to block device', 'error');
     }
   };
 
-  const handleDeviceDrop = (device, groupType) => {
-    const limit = groupType === 'limited' ? 50 : null; // Default limit for limited group
-    if (limit) {
-      handleSpeedLimit(device.ip, limit);
-    } else {
-      handleRemoveLimit(device.ip);
+  const handleRenameDevice = async (ip, newName) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/device/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip, name: newName }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        showNotification(`Device ${ip} renamed to ${newName}`, 'success');
+        fetchDevices();
+      }
+    } catch (error) {
+      showNotification('Failed to rename device', 'error');
     }
   };
 
-  const showNotification = (message, severity = 'info') => {
+  const handleDeviceDrop = (device, group) => {
+    // Handle device drop logic here
+    console.log(`Device ${device.ip} dropped to ${group}`);
+  };
+
+  const showNotification = (message, severity) => {
     setNotification({ open: true, message, severity });
   };
 
   const formatBytes = (bytes) => {
-    if (!bytes) return '0 B';
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
@@ -373,7 +396,7 @@ const NetworkDashboard = () => {
                             Total Upload Speed
                           </Typography>
                           <Typography variant="h6">
-                            {formatBytes(chartData[chartData.length - 1]?.upload || 0)}/s
+                            {formatBytes(stats.totalUpload || 0)}/s
                           </Typography>
                         </Grid>
                         <Grid item xs={6}>
@@ -381,7 +404,7 @@ const NetworkDashboard = () => {
                             Total Download Speed
                           </Typography>
                           <Typography variant="h6">
-                            {formatBytes(chartData[chartData.length - 1]?.download || 0)}/s
+                            {formatBytes(stats.totalDownload || 0)}/s
                           </Typography>
                         </Grid>
                       </Grid>
@@ -422,7 +445,8 @@ const NetworkDashboard = () => {
                 devices={speedGroups.unlimited}
                 onDrop={(device) => handleDeviceDrop(device, 'unlimited')}
                 onLimitChange={handleSpeedLimit}
-                onDelete={handleRemoveLimit}
+                onBlock={handleBlockDevice}
+                onRename={handleRenameDevice}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -431,48 +455,40 @@ const NetworkDashboard = () => {
                 devices={speedGroups.limited}
                 onDrop={(device) => handleDeviceDrop(device, 'limited')}
                 onLimitChange={handleSpeedLimit}
-                onDelete={handleRemoveLimit}
+                onBlock={handleBlockDevice}
+                onRename={handleRenameDevice}
               />
             </Grid>
-          </Grid>
 
-          {/* Floating Action Button for Refresh */}
-          <Box
-            sx={{
-              position: 'fixed',
-              bottom: 20,
-              right: 20,
-            }}
-          >
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+            {/* Floating Action Button for Refresh */}
+            <Box sx={{ position: 'fixed', bottom: 20, right: 20 }}>
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<RefreshIcon />}
+                  onClick={() => {
+                    fetchDevices();
+                    fetchStats();
+                  }}
+                  sx={{ borderRadius: 28 }}
+                >
+                  Refresh
+                </Button>
+              </motion.div>
+            </Box>
+
+            {/* Notifications */}
+            <Snackbar
+              open={notification.open}
+              autoHideDuration={6000}
+              onClose={() => setNotification({ ...notification, open: false })}
             >
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<RefreshIcon />}
-                onClick={() => {
-                  fetchDevices();
-                  fetchStats();
-                }}
-                sx={{ borderRadius: 28 }}
-              >
-                Refresh
-              </Button>
-            </motion.div>
-          </Box>
-
-          {/* Notifications */}
-          <Snackbar
-            open={notification.open}
-            autoHideDuration={6000}
-            onClose={() => setNotification({ ...notification, open: false })}
-          >
-            <Alert severity={notification.severity} onClose={() => setNotification({ ...notification, open: false })}>
-              {notification.message}
-            </Alert>
-          </Snackbar>
+              <Alert severity={notification.severity} onClose={() => setNotification({ ...notification, open: false })}>
+                {notification.message}
+              </Alert>
+            </Snackbar>
+          </Grid>
         </Box>
       </DndProvider>
     </ThemeProvider>

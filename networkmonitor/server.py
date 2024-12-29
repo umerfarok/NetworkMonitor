@@ -143,6 +143,19 @@ def create_app():
             logging.error(f"Error removing device limit: {str(e)}")
             return jsonify(response(False, error=str(e))), 500
 
+    @app.route('/api/device/block', methods=['POST'])
+    def block_device():
+        """Block a device"""
+        try:
+            data = request.json
+            ip = data.get('ip')
+            if monitor.block_device(ip):
+                return jsonify(response(True, {'ip': ip}))
+            return jsonify(response(False, error='Failed to block device')), 500
+        except Exception as e:
+            logging.error(f"Error blocking device: {str(e)}")
+            return jsonify(response(False, error=str(e))), 500
+
     @app.route('/api/device/rename', methods=['POST'])
     def rename_device():
         """Set a custom name for a device"""
