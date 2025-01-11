@@ -1,6 +1,6 @@
-from flask import Flask, jsonify, request, current_app
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from .monitor import NetworkMonitor
+from .monitor import NetworkController
 import logging
 from typing import Dict, Any
 import platform
@@ -9,7 +9,6 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
 
-    # Configure logging
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
@@ -19,10 +18,8 @@ def create_app():
         ]
     )
 
-    # Create monitor instance
-    monitor = NetworkMonitor()
+    monitor = NetworkController()
     
-    # Start monitoring when app is created
     try:
         monitor.start_monitoring()
         app.logger.info("Network monitoring started")
@@ -30,7 +27,6 @@ def create_app():
         app.logger.error(f"Error starting monitoring: {e}")
 
     def response(success: bool, data: Any = None, error: str = None) -> Dict:
-        """Standard response format"""
         return {
             'success': success,
             'data': data,
@@ -239,13 +235,113 @@ def create_app():
     @app.errorhandler(404)
     def not_found(e):
         return jsonify(response(False, error='Resource not found')), 404
+    
+    
+    @app.route('/api/device/protect', methods=['POST'])
+    def protect_device():
+        """Enable protection for a device"""
+        try:
+            data = request.json
+            ip = data.get('ip')
+            
+            if monitor.protect_device(ip):
+                return jsonify(response(True, {
+                    'ip': ip,
+                    'status': 'protected'
+                }))
+            return jsonify(response(False, error='Failed to protect device')), 500
+        except Exception as e:
+            logging.error(f"Error protecting device: {str(e)}")
+            return jsonify(response(False, error=str(e))), 500
+
+    @app.route('/api/device/unprotect', methods=['POST'])
+    def unprotect_device():
+        """Disable protection for a device"""
+        try:
+            data = request.json
+            ip = data.get('ip')
+            
+            if monitor.unprotect_device(ip):
+                return jsonify(response(True, {
+                    'ip': ip,
+                    'status': 'unprotected'
+                }))
+            return jsonify(response(False, error='Failed to unprotect device')), 500
+        except Exception as e:
+            logging.error(f"Error unprotecting device: {str(e)}")
+            return jsonify(response(False, error=str(e))), 500
+
+    @app.route('/api/device/cut', methods=['POST'])
+    def cut_device():
+        """Cut network access for a device"""
+        try:
+            data = request.json
+            ip = data.get('ip')
+            
+            if monitor.cut_device(ip):
+                return jsonify(response(True, {
+                    'ip': ip,
+                    'status': 'cutting'
+                }))
+            return jsonify(response(False, error='Failed to cut device')), 500
+        except Exception as e:
+            logging.error(f"Error cutting device: {str(e)}")
+            return jsonify(response(False, error=str(e))), 500
+
+    @app.route('/api/device/restore', methods=['POST'])
+    def restore_device():
+        """Restore network access for a device"""
+        try:
+            data = request.json
+            ip = data.get('ip')
+            
+            if monitor.stop_cut(ip):
+                return jsonify(response(True, {
+                    'ip': ip,
+                    'status': 'restored'
+                }))
+            return jsonify(response(False, error='Failed to restore device')), 500
+        except Exception as e:
+            logging.error(f"Error restoring device: {str(e)}")
+            return jsonify(response(False, error=str(e))), 500
+
+    @app.route('/api/device/status', methods=['GET'])
+    def get_device_status():
+        """Get attack/protection status of devices"""
+        try:
+            statuses = {
+                ip: {
+                    'is_protected': device.is_protected,
+                    'attack_status': device.attack_status
+                }
+                for ip, device in monitor.devices.items()
+            }
+            return jsonify(response(True, statuses))
+        except Exception as e:
+            logging.error(f"Error getting device statuses: {str(e)}")
+            return jsonify(response(False, error=str(e))), 500
+
+    @app.route('/api/network/gateway', methods=['GET'])
+    def get_gateway_info():
+        """Get gateway information"""
+        try:
+            gateway_ip, gateway_mac = monitor._get_gateway_info()
+            return jsonify(response(True, {
+                'ip': gateway_ip,
+                'mac': gateway_mac
+            }))
+        except Exception as e:
+            logging.error(f"Error getting gateway info: {str(e)}")
+            return jsonify(response(False, error=str(e))), 500
 
     @app.errorhandler(500)
     def server_error(e):
         return jsonify(response(False, error='Internal server error')), 500
 
-    # Register cleanup function
     def cleanup():
+        # Stop all attacks and monitoring
+        for ip in list(monitor.attack_threads.keys()):
+            monitor.stop_cut(ip)
         monitor.stop_monitoring()
 
     import atexit

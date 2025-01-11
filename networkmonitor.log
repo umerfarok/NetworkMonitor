@@ -1,111 +1,231 @@
-2024-12-28 16:39:29,756 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on all addresses (0.0.0.0)
+2025-01-11 14:39:21,444 - INFO - Network monitoring started
+2025-01-11 14:39:21,457 - INFO - Network monitoring started
+2025-01-11 14:39:21,468 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on http://127.0.0.1:5000
- * Running on http://192.168.100.8:5000
-2024-12-28 16:39:29,757 - INFO - [33mPress CTRL+C to quit[0m
-2024-12-28 16:39:29,768 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:29,768 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:29,778 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:29,778 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:29,778 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:29,778 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:34,796 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:34,801 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:34,803 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:34,804 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:34,811 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:34,812 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:39,821 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:39,827 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:39,829 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:39,830 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:39,837 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:39,838 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:44,846 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:44,854 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:44,854 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:44,862 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:44,871 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:44,871 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:49,747 - INFO - 127.0.0.1 - - [28/Dec/2024 16:39:49] "[33mGET /health HTTP/1.1[0m" 404 -
-2024-12-28 16:39:49,814 - INFO - 127.0.0.1 - - [28/Dec/2024 16:39:49] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
-2024-12-28 16:39:49,896 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:49,896 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:49,933 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:49,933 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:49,934 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:49,934 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:54,949 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:54,959 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:54,959 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:54,966 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:54,975 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:54,976 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:39:59,983 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:59,992 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:59,992 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:39:59,992 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:00,000 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:00,001 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:05,017 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:05,018 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:05,026 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:05,026 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:05,033 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:05,034 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:10,043 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:10,049 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:10,050 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:10,051 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:10,057 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:10,058 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:15,066 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:15,074 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:15,075 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:15,075 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:15,082 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:15,082 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:20,091 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:20,097 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:20,098 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:20,098 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:20,106 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:20,106 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:25,114 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:25,121 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:25,123 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:25,123 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:25,130 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:25,130 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:30,145 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:30,148 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:30,155 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:30,155 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:30,164 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:30,164 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:35,173 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:35,181 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:35,181 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:35,182 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:35,210 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:35,210 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:40,227 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:40,227 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:40,298 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:40,299 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:40,299 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:40,299 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:45,362 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:45,362 - ERROR - Error getting default interface: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:45,485 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:45,485 - ERROR - Error getting interface IP: Command 'ipconfig' returned non-zero exit status 1.
-2024-12-28 16:40:45,487 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:40:45,487 - ERROR - Error scanning network: Could not get IP for interface None
-2024-12-28 16:50:56,283 - INFO - Network monitoring started
-2024-12-28 16:50:56,308 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5000
- * Running on http://192.168.100.8:5000
-2024-12-28 16:50:56,309 - INFO - [33mPress CTRL+C to quit[0m
-2024-12-28 16:50:56,365 - INFO - Scanning subnet: 192.168.100.0/24
-2024-12-28 16:50:56,382 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:21,468 - INFO - [33mPress CTRL+C to quit[0m
+2025-01-11 14:39:21,506 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:21,521 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:21,521 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:23,093 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:23] "[33mGET / HTTP/1.1[0m" 404 -
+2025-01-11 14:39:24,835 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:24] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:39:24,894 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:24] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:39:26,213 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:26] "GET /api/status HTTP/1.1" 200 -
+2025-01-11 14:39:26,214 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:26] "GET /api/wifi/interfaces HTTP/1.1" 200 -
+2025-01-11 14:39:26,290 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:26] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:39:26,582 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:26] "GET /api/status HTTP/1.1" 200 -
+2025-01-11 14:39:26,635 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:26] "GET /api/wifi/interfaces HTTP/1.1" 200 -
+2025-01-11 14:39:26,665 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:26] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:39:30,174 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:30,288 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:30,859 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:31,547 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:31] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:39:31,639 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:31,751 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:31] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:39:32,001 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:32] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:39:32,358 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:32] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:39:36,550 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:36] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:39:36,606 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:36] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:39:38,536 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:38,789 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:39,555 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:41,545 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:41] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:39:41,607 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:41] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:39:46,774 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:47,247 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:47,312 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:47] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:39:47,395 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:47] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:39:48,214 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:52,301 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:52] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:39:52,349 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:52,380 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:52] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:39:55,005 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:55,731 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:56,546 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:56] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:39:56,577 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:39:56,651 - INFO - 127.0.0.1 - - [11/Jan/2025 14:39:56] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:39:56,879 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:01,547 - INFO - 127.0.0.1 - - [11/Jan/2025 14:40:01] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:40:01,577 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:01,610 - INFO - 127.0.0.1 - - [11/Jan/2025 14:40:01] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:40:03,245 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:04,147 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:05,705 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:07,302 - INFO - 127.0.0.1 - - [11/Jan/2025 14:40:07] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:40:07,338 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:07,661 - INFO - 127.0.0.1 - - [11/Jan/2025 14:40:07] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:40:11,470 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:12,300 - INFO - 127.0.0.1 - - [11/Jan/2025 14:40:12] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:40:12,604 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:12,674 - INFO - 127.0.0.1 - - [11/Jan/2025 14:40:12] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:40:13,011 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:14,346 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:19,723 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:21,071 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:22,878 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:27,968 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:29,499 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:31,331 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:36,205 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:38,008 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:39,813 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:44,517 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:46,423 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:48,245 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:52,749 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:54,847 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:40:56,658 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:00,973 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:03,298 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:05,116 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:09,199 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:11,718 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:13,546 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:17,437 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:20,111 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:22,010 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:25,673 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:28,561 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:30,440 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:33,102 - INFO - 127.0.0.1 - - [11/Jan/2025 14:41:33] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:41:33,438 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:33,940 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:36,992 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:38,883 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:42,201 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:45,324 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:47,337 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:50,533 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:51,189 - INFO - 127.0.0.1 - - [11/Jan/2025 14:41:51] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:41:51,492 - INFO - 127.0.0.1 - - [11/Jan/2025 14:41:51] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:41:51,848 - INFO - 127.0.0.1 - - [11/Jan/2025 14:41:51] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:41:52,177 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:53,669 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:55,796 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:58,921 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:59,266 - INFO - 127.0.0.1 - - [11/Jan/2025 14:41:59] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:41:59,468 - INFO - 127.0.0.1 - - [11/Jan/2025 14:41:59] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:41:59,683 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:41:59,798 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:02,031 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:04,246 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:07,337 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:09,492 - INFO - 127.0.0.1 - - [11/Jan/2025 14:42:09] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:42:09,820 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:10,371 - INFO - 127.0.0.1 - - [11/Jan/2025 14:42:10] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:42:10,422 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:10,680 - INFO - 127.0.0.1 - - [11/Jan/2025 14:42:10] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:42:11,019 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:12,739 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:15,823 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:18,874 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:21,239 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:24,308 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:27,340 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:29,683 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:32,745 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:35,758 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:38,146 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:41,176 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:44,211 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:46,702 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:49,597 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:52,653 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:55,165 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:42:58,177 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:01,074 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:03,724 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:06,629 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:09,500 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:12,154 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:15,065 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:17,933 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:20,623 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:23,483 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:26,364 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:29,122 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:32,023 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:34,803 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:36,282 - INFO - 127.0.0.1 - - [11/Jan/2025 14:43:36] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:43:36,639 - INFO - 127.0.0.1 - - [11/Jan/2025 14:43:36] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:43:36,942 - INFO - 127.0.0.1 - - [11/Jan/2025 14:43:36] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:43:37,273 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:37,594 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:40,461 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:43,268 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:46,144 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:48,896 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:51,738 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:54,574 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:43:57,303 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:00,154 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:03,028 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:05,792 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:06,142 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:06] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:44:06,504 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:06] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:06,705 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:06] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:44:06,875 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:06] "GET /api/wifi/interfaces HTTP/1.1" 200 -
+2025-01-11 14:44:07,057 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:07] "GET /api/status HTTP/1.1" 200 -
+2025-01-11 14:44:07,267 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:07] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:07,424 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:07] "GET /api/wifi/interfaces HTTP/1.1" 200 -
+2025-01-11 14:44:07,594 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:07] "GET /api/status HTTP/1.1" 200 -
+2025-01-11 14:44:07,822 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:07] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:08,572 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:09,135 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:09] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:44:11,449 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:12,210 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:12] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:44:12,310 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:12,355 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:12] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:14,285 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:14,819 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:14] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:44:16,250 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:16] "GET /api/devices?interface=Wi-Fi HTTP/1.1" 200 -
+2025-01-11 14:44:17,112 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:17,216 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:17] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:44:17,323 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:17] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:17,700 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:17] "GET /api/status HTTP/1.1" 200 -
+2025-01-11 14:44:17,829 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:17] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:17,830 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:17] "GET /api/wifi/interfaces HTTP/1.1" 200 -
+2025-01-11 14:44:18,275 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:18] "GET /api/status HTTP/1.1" 200 -
+2025-01-11 14:44:18,275 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:18] "GET /api/wifi/interfaces HTTP/1.1" 200 -
+2025-01-11 14:44:18,368 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:18] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:19,851 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:22,761 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:23,186 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:23] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:44:23,287 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:23] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:25,648 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:28,186 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:28] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:44:28,273 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:28] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:28,412 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:31,170 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:33,185 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:33] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:44:33,440 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:33] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:34,058 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:36,913 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:37,258 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:38,187 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:38] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:44:38,250 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:38] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:39,614 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:42,510 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:43,185 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:43] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:44:43,219 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:43,249 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:43] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:45,378 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:48,105 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:48,189 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:48] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:44:48,278 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:48] "GET /api/network/gateway HTTP/1.1" 200 -
+2025-01-11 14:44:48,583 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:50,937 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:53,186 - INFO - 127.0.0.1 - - [11/Jan/2025 14:44:53] "GET /api/stats/bandwidth HTTP/1.1" 200 -
+2025-01-11 14:44:53,516 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:53,858 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:56,591 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:44:59,401 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:45:02,427 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:45:04,993 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:45:08,008 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:45:10,867 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:45:13,406 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:45:16,433 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:45:19,310 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:45:21,939 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:45:24,896 - INFO - Scanning subnet: 192.168.100.0/24
+2025-01-11 14:45:27,780 - INFO - Scanning subnet: 192.168.100.0/24

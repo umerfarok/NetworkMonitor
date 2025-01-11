@@ -1,64 +1,19 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.2
 Name: networkmonitor
 Version: 0.1.0
 Summary: Network monitoring and bandwidth control tool
+Author: Your Name
 License: MIT
 Requires-Python: >=3.8
-Description-Content-Type: text/markdown
-Requires-Dist: flask>=2.0.1
-Requires-Dist: flask-cors>=3.0.10
-Requires-Dist: psutil>=5.8.0
-Requires-Dist: scapy>=2.4.5
-Requires-Dist: requests>=2.26.0
-Requires-Dist: click>=8.0.0
-Requires-Dist: ifaddr>=0.1.7
-
-# Network Monitor - Quick Start Guide
-
-## Installation
-
-1. Download and unzip the package
-2. Open terminal/command prompt in the extracted folder
-3. Run:
-```bash
-python install.py
-```
-
-## Starting the Tool
-
-### Method 1: Desktop Shortcut
-- Double-click the NetworkMonitor shortcut created on your desktop
-
-### Method 2: Command Line
-```bash
-netmonitor start
-```
-
-## Using the Tool
-
-1. The web interface will automatically open in your browser
-2. Select your network interface from the dropdown
-3. Click "Scan Network" to see connected devices
-
-### Monitor Network:
-- View connected devices
-- See real-time bandwidth usage
-- Check device status
-
-### Control Bandwidth:
-1. Enter device IP address
-2. Set bandwidth limit (in Mbps)
-3. Click "Apply Limit" or "Remove Limit"
-
-## Requirements
-- Python 3.8 or higher
-- Administrator/root privileges
-
-## Troubleshooting
-
-If you get permissions error:
-- Windows: Run as Administrator
-- Linux/Mac: Use `sudo netmonitor start`
-
-## Support
-If you need help, create an issue in the GitHub repository.# netmoniter
+Requires-Dist: flask<3.0.0,>=2.0.1
+Requires-Dist: flask-cors<4.0.0,>=3.0.10
+Requires-Dist: psutil<6.0.0,>=5.8.0
+Requires-Dist: scapy<3.0.0,>=2.4.5
+Requires-Dist: requests<3.0.0,>=2.26.0
+Requires-Dist: click<9.0.0,>=8.0.0
+Requires-Dist: ifaddr<0.2.0,>=0.1.7
+Requires-Dist: python-dateutil<3.0.0,>=2.8.2
+Requires-Dist: werkzeug<3.0.0,>=2.0.0
+Requires-Dist: typing-extensions<5.0.0,>=4.0.0
+Dynamic: author
+Dynamic: requires-python

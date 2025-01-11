@@ -1,8 +1,12 @@
-"""Network monitoring package"""
-__version__ = "0.1.0"
+"""Network Monitor Package"""
+try:
+    from .monitor import NetworkController
+    from .server import create_app
+    from .cli import cli
 
-from .cli import main
-from .server import app
-from .monitor import NetworkMonitor
-
-__all__ = ['main', 'app', 'NetworkMonitor']
+    __version__ = "0.1.0"
+    __all__ = ["NetworkController", "create_app", "cli"]
+except ImportError as e:
+    print(f"Error importing dependencies: {e}")
+    print("Please ensure all required packages are installed:")
+    print("pip install psutil flask flask-cors scapy-python3 requests click ifaddr pywin32")
