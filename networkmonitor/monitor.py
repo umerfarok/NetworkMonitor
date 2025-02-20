@@ -249,7 +249,7 @@ class NetworkController:
                         'name': adapter.nice_name,
                         'ip': ip.ip,
                         'network_mask': ip.network_bits if hasattr(ip, 'network_bits') else 24,
-                        'stats': self._get_interface_stats(adapter.nice_name)
+                        'stats': None
                     })
         return interfaces
 
@@ -266,10 +266,13 @@ class NetworkController:
                         if "Name" in line:
                             wifi_interfaces.append(line.split(":")[1].strip())
             else:  # Linux/MacOS
-                interfaces = self.get_interfaces()
-                for interface in interfaces:
-                    if interface['name'].startswith(('wlan', 'wifi', 'wi-fi', 'wl')):
-                        wifi_interfaces.append(interface['name'])
+                print("[DEBUG] Running on Linux/MacOS")
+            interfaces = self.get_interfaces()
+            print(f"[DEBUG] interfaces found: {interfaces}")  # Debug interfaces list
+            for interface in interfaces:
+                print(f"[DEBUG] Checking interface: {interface}")
+                if interface['name'].startswith(('wlan', 'wifi', 'wi-fi', 'wl','wpl')):
+                    wifi_interfaces.append(interface['name'])
         except Exception as e:
             logging.error(f"Error getting WiFi interfaces: {e}")
         return wifi_interfaces
@@ -473,10 +476,10 @@ class NetworkController:
             try:
                 self.get_connected_devices()
                 self._update_device_speeds()
-                time.sleep(5)  # Scan every 5 seconds
+                time.sleep(120)  # Scan every 5 seconds
             except Exception as e:
                 logging.error(f"Error in monitoring loop: {e}")
-                time.sleep(5)
+                time.sleep(120)
 
     def _update_device_speeds(self):
         """Update current speeds for all devices"""
