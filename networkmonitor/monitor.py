@@ -249,7 +249,7 @@ class NetworkController:
                         'name': adapter.nice_name,
                         'ip': ip.ip,
                         'network_mask': ip.network_bits if hasattr(ip, 'network_bits') else 24,
-                        'stats': self._get_interface_stats(adapter.nice_name)
+                        'stats': None
                     })
         return interfaces
 
@@ -268,7 +268,7 @@ class NetworkController:
             else:  # Linux/MacOS
                 interfaces = self.get_interfaces()
                 for interface in interfaces:
-                    if interface['name'].startswith(('wlan', 'wifi', 'wi-fi', 'wl')):
+                    if interface['name'].startswith(('wlan', 'wifi', 'wi-fi', 'wl','wpl')):
                         wifi_interfaces.append(interface['name'])
         except Exception as e:
             logging.error(f"Error getting WiFi interfaces: {e}")
