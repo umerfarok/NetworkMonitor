@@ -72,7 +72,7 @@ class NetworkController:
                 logging.FileHandler('networkmonitor.log'),
                 logging.StreamHandler()
             ]
-        )
+        )   
     
     def _get_gateway_info(self) -> Tuple[str, str]:
         """Get gateway IP and MAC address"""
@@ -83,20 +83,64 @@ class NetworkController:
                                               text=True,
                                               creationflags=subprocess.CREATE_NO_WINDOW)
                 gateway_ip = None
-                for line in output.split('\n'):
+                print("\n=== Gateway Detection Output ===")
+                print(output)
+                
+                # Parse output line by line
+                lines = output.split('\n')
+                i = 0
+                while i < len(lines):
+                    line = lines[i].strip()
                     if "Default Gateway" in line:
-                        gateway_ip = line.split(":")[-1].strip()
-                        break
+                        # Skip if line ends with colon
+                        if line.strip().endswith(':'):
+                            i += 1
+                            continue
+                            
+                        # Check current line for IPv4
+                        possible_ip = line.split(':')[-1].strip()
+                        print(f"Found gateway line: {line}")
+                        print(f"Checking IP: {possible_ip}")
+                        
+                        # If this line has an IPv4 address
+                        if '.' in possible_ip and not possible_ip.startswith('fe80'):
+                            gateway_ip = possible_ip
+                            print(f"Found IPv4 Gateway: {gateway_ip}")
+                            break
+                        
+                        # If not, check next line
+                        elif i + 1 < len(lines):
+                            next_line = lines[i + 1].strip()
+                            if '.' in next_line and not next_line.startswith('fe80'):
+                                gateway_ip = next_line
+                                print(f"Found IPv4 Gateway on next line: {gateway_ip}")
+                                break
+                    i += 1
+                
+                print(f"\nFinal Gateway IP: {gateway_ip}")
                 
                 if gateway_ip:
                     # Get gateway MAC using ARP
+                    print("\nGetting MAC address from ARP table...")
                     arp_output = subprocess.check_output([self.arp_path, "-a"], 
                                                        text=True,
                                                        creationflags=subprocess.CREATE_NO_WINDOW)
+                    print("\nARP table output:")
+                    print(arp_output)
+                    
                     for line in arp_output.split('\n'):
                         if gateway_ip in line:
-                            mac = line.split()[-1].strip()
-                            return gateway_ip, mac
+                            try:
+                                parts = line.split()
+                                mac = parts[1].replace('-', ':')
+                                print(f"Found Gateway MAC: {mac}")
+                                return gateway_ip, mac
+                            except IndexError:
+                                continue
+                
+                print("Failed to find gateway MAC address")
+                return None, None
+                
             else:
                 # Linux/MacOS implementation
                 gateway_ip = subprocess.check_output("ip route | grep default | cut -d' ' -f3", 
@@ -106,9 +150,10 @@ class NetworkController:
                                timeout=2, verbose=False)[0]
                     if result:
                         return gateway_ip, result[0][1].hwsrc
-
+    
         except Exception as e:
             logging.error(f"Error getting gateway info: {e}")
+            print(f"\nError during gateway detection: {str(e)}")
         return None, None
 
     def protect_device(self, ip: str) -> bool:

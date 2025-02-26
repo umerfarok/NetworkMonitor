@@ -31,6 +31,8 @@ import {
   Chip,
   Tooltip,
   Badge,
+  Stack,
+  Fade,
 } from '@mui/material';
 import {
   Wifi as WifiIcon,
@@ -44,9 +46,26 @@ import {
   GppBad as GppBadIcon,
   RestartAlt as RestartAltIcon,
   Visibility as VisibilityIcon,
+  Fingerprint as FingerprintIcon,
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  TrendingUp, 
+  Wifi, 
+  Speed, 
+  WifiOff, 
+  Gauge, 
+  Activity, 
+  ArrowDown, 
+  ArrowUp, 
+  Router, 
+  Network, 
+  Cpu, 
+  RefreshCw,
+  MoreVertical, 
+  Settings
+} from 'lucide-react';
 
 const theme = createTheme({
   palette: {
@@ -141,68 +160,233 @@ const DeviceCard = ({
 
   return (
     <motion.div
-      ref={drag}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
-      style={{ opacity: isDragging ? 0.5 : 1, cursor: 'move' }}
+    ref={drag}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.4, ease: 'easeOut' }}
+    style={{ opacity: isDragging ? 0.5 : 1, cursor: 'move' }}
+  >
+    <Card
+      sx={{
+        mb: 3,
+        bgcolor: 'background.paper',
+        '&:hover': { 
+          boxShadow: '0 20px 40px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06)',
+          transform: 'translateY(-4px)',
+        },
+        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative',
+        overflow: 'visible',
+        borderRadius: '24px',
+        border: '1px solid rgba(0,0,0,0.08)',
+        backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
+        backdropFilter: 'blur(10px)',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          borderRadius: '24px',
+          padding: '2px',
+          background: 'linear-gradient(135deg, rgba(33,150,243,0.3), rgba(21,101,192,0.1))',
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude',
+        }
+      }}
     >
-      <Card
-        sx={{
-          mb: 2,
-          bgcolor: 'background.paper',
-          '&:hover': { boxShadow: 6 },
-          transition: 'all 0.3s',
-          position: 'relative',
-          overflow: 'visible',
-        }}
-      >
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item>
-              <DragIndicatorIcon color="action" />
-            </Grid>
-            <Grid item>
-              <Badge
-                color={getStatusColor()}
-                variant="dot"
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
+      <CardContent sx={{ p: 4 }}>
+        <Grid container spacing={4} alignItems="center">
+          <Grid item>
+            <Box
+              sx={{
+                bgcolor: 'rgba(33,150,243,0.08)',
+                p: 1.5,
+                borderRadius: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transform: 'rotate(0deg)',
+                transition: 'transform 0.3s ease',
+                '&:hover': {
+                  transform: 'rotate(180deg)',
+                  bgcolor: 'rgba(33,150,243,0.12)',
+                }
+              }}
+            >
+              <DragIndicatorIcon 
+                color="primary" 
+                sx={{ 
+                  opacity: 0.8,
+                  transition: 'opacity 0.2s',
+                  '&:hover': { opacity: 1 }
+                }}
+              />
+            </Box>
+          </Grid>
+          <Grid item>
+            <Badge
+              color={getStatusColor()}
+              variant="dot"
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              sx={{
+                '& .MuiBadge-badge': {
+                  height: '16px',
+                  width: '16px',
+                  borderRadius: '8px',
+                  boxShadow: '0 0 0 3px #fff, 0 0 0 6px rgba(0,0,0,0.04)',
+                  animation: 'pulse 2s infinite'
+                },
+                '@keyframes pulse': {
+                  '0%': { transform: 'scale(1)' },
+                  '50%': { transform: 'scale(1.1)' },
+                  '100%': { transform: 'scale(1)' }
+                }
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: device.status === 'active' ? 'primary.lighter' : 'error.lighter',
+                  p: 2,
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'transform 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                  }
                 }}
               >
                 {device.status === 'active' ? (
-                  <WifiIcon color="primary" />
+                  <WifiIcon color="primary" sx={{ fontSize: 32 }} />
                 ) : (
-                  <WifiOffIcon color="error" />
+                  <WifiOffIcon color="error" sx={{ fontSize: 32 }} />
                 )}
-              </Badge>
-            </Grid>
-            <Grid item xs>
-              <Typography variant="h6">
-                {device.hostname || device.ip}
-                {getStatusChip()}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              </Box>
+            </Badge>
+          </Grid>
+          <Grid item xs>
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                fontWeight: 600,
+                color: 'text.primary',
+                mb: 1.5,
+                letterSpacing: '-0.5px'
+              }}
+            >
+              {device.hostname || device.ip}
+              {getStatusChip()}
+            </Typography>
+            <Stack spacing={1.5}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontFamily: 'Roboto Mono, monospace',
+                  letterSpacing: '0.5px',
+                  color: 'text.secondary',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  fontSize: '0.9rem'
+                }}
+              >
+                <FingerprintIcon sx={{ fontSize: 22, opacity: 0.9 }} />
                 MAC: {device.mac}
               </Typography>
               {device.vendor && (
-                <Typography variant="body2" color="textSecondary">
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: 'text.secondary',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  <BusinessIcon sx={{ fontSize: 18, opacity: 0.8 }} />
                   Vendor: {device.vendor}
                 </Typography>
               )}
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Typography variant="body2" gutterBottom>
-                Current Speed: {device.current_speed?.toFixed(1)} Mbps
+            </Stack>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Box
+              sx={{
+                bgcolor: 'rgba(33,150,243,0.04)',
+                p: 3,
+                borderRadius: '20px',
+                border: '1px solid rgba(33,150,243,0.1)',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'radial-gradient(circle at top right, rgba(33,150,243,0.1), transparent)',
+                  opacity: 0.5
+                }
+              }}
+            >
+              <Typography 
+                variant="body2" 
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  mb: 2.5,
+                  position: 'relative'
+                }}
+              >
+                <SpeedIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+                Current Speed: 
+                <Box
+                  component="span"
+                  sx={{
+                    fontWeight: 700,
+                    color: 'primary.main',
+                    bgcolor: 'primary.lighter',
+                    px: 1.5,
+                    py: 0.75,
+                    borderRadius: '8px',
+                    fontSize: '0.95rem',
+                    boxShadow: '0 2px 8px rgba(33,150,243,0.2)',
+                    animation: 'float 3s ease-in-out infinite'
+                  }}
+                >
+                  {device.current_speed?.toFixed(1)} Mbps
+                </Box>
               </Typography>
               <LinearProgress
                 variant="determinate"
                 value={(device.current_speed / (device.speed_limit || 100)) * 100}
-                sx={{ mb: 1, height: 8, borderRadius: 4 }}
+                sx={{ 
+                  mb: 3,
+                  height: 12,
+                  borderRadius: 6,
+                  bgcolor: 'rgba(0,0,0,0.04)',
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 6,
+                    backgroundImage: 'linear-gradient(90deg, #2196f3, #1565c0)',
+                    boxShadow: '0 2px 6px rgba(33,150,243,0.3)'
+                  }
+                }}
               />
-              <Grid container spacing={1} alignItems="center">
+              <Grid container spacing={2} alignItems="center">
                 <Grid item xs>
                   <Slider
                     value={device.speed_limit || 0}
@@ -211,47 +395,152 @@ const DeviceCard = ({
                     max={100}
                     valueLabelDisplay="auto"
                     valueLabelFormat={(value) => `${value} Mbps`}
+                    sx={{
+                      '& .MuiSlider-thumb': {
+                        width: 20,
+                        height: 20,
+                        transition: 'all 0.2s',
+                        '&:hover, &.Mui-focusVisible': {
+                          boxShadow: '0 0 0 10px rgba(33, 150, 243, 0.2)'
+                        }
+                      },
+                      '& .MuiSlider-track': {
+                        height: 8,
+                        borderRadius: 4
+                      },
+                      '& .MuiSlider-rail': {
+                        height: 8,
+                        borderRadius: 4,
+                        opacity: 0.2
+                      },
+                      '& .MuiSlider-valueLabel': {
+                        borderRadius: '10px',
+                        padding: '6px 12px',
+                        backgroundColor: 'primary.dark',
+                        fontSize: '0.85rem',
+                        fontWeight: 600
+                      }
+                    }}
                   />
                 </Grid>
                 <Grid item>
-                  <Tooltip title={device.is_protected ? "Unprotect Device" : "Protect Device"}>
-                    <IconButton
-                      size="small"
-                      onClick={() => device.is_protected ? onUnprotect(device.ip) : onProtect(device.ip)}
-                      color={device.is_protected ? "success" : "default"}
+                  <Stack direction="row" spacing={2}>
+                    <Tooltip 
+                      title={device.is_protected ? "Unprotect Device" : "Protect Device"}
+                      arrow
                     >
-                      <SecurityIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={device.attack_status === 'cutting' ? "Restore Network" : "Cut Network"}>
-                    <IconButton
-                      size="small"
-                      onClick={() => device.attack_status === 'cutting' ? onRestore(device.ip) : onCut(device.ip)}
-                      color={device.attack_status === 'cutting' ? "error" : "default"}
-                      disabled={device.is_protected}
+                      <IconButton
+                        size="large"
+                        onClick={() => device.is_protected ? onUnprotect(device.ip) : onProtect(device.ip)}
+                        color={device.is_protected ? "success" : "default"}
+                        sx={{ 
+                          bgcolor: device.is_protected ? 'success.lighter' : 'action.hover',
+                          '&:hover': {
+                            bgcolor: device.is_protected ? 'success.light' : 'action.selected',
+                            transform: 'scale(1.1)'
+                          },
+                          transition: 'all 0.3s',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        <SecurityIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip 
+                      title={device.attack_status === 'cutting' ? "Restore Network" : "Cut Network"}
+                      arrow
                     >
-                      {device.attack_status === 'cutting' ? <RestartAltIcon /> : <BlockIcon />}
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Rename Device">
-                    <IconButton
-                      size="small"
-                      onClick={() => setDialogOpen(true)}
-                      color="primary"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
+                      <IconButton
+                        size="large"
+                        onClick={() => device.attack_status === 'cutting' ? onRestore(device.ip) : onCut(device.ip)}
+                        color={device.attack_status === 'cutting' ? "error" : "default"}
+                        disabled={device.is_protected}
+                        sx={{ 
+                          bgcolor: device.attack_status === 'cutting' ? 'error.lighter' : 'action.hover',
+                          '&:hover': {
+                            bgcolor: device.attack_status === 'cutting' ? 'error.light' : 'action.selected',
+                            transform: 'scale(1.1)'
+                          },
+                          transition: 'all 0.3s',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          '&.Mui-disabled': {
+                            bgcolor: 'action.disabledBackground',
+                            opacity: 0.6
+                          }
+                        }}
+                      >
+                        {device.attack_status === 'cutting' ? <RestartAltIcon /> : <BlockIcon />}
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Rename Device" arrow>
+                      <IconButton
+                        size="large"
+                        onClick={() => setDialogOpen(true)}
+                        color="primary"
+                        sx={{ 
+                          bgcolor: 'primary.lighter',
+                          '&:hover': {
+                            bgcolor: 'primary.light',
+                            transform: 'scale(1.1)'
+                          },
+                          transition: 'all 0.3s',
+                          boxShadow: '0 4px 12px rgba(33,150,243,0.2)'
+                        }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
                 </Grid>
               </Grid>
-            </Grid>
+            </Box>
           </Grid>
-        </CardContent>
+        </Grid>
+      </CardContent>
 
-        {/* Rename Dialog */}
-        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-          <DialogTitle>Rename Device</DialogTitle>
-          <DialogContent>
+      <Dialog 
+        open={dialogOpen} 
+        onClose={() => setDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: '24px',
+            maxWidth: '500px',
+            width: '100%',
+            backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95))',
+            boxShadow: '0 32px 64px rgba(0,0,0,0.2)',
+            border: '1px solid rgba(33,150,243,0.1)',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              borderRadius: '24px',
+              padding: '2px',
+              background: 'linear-gradient(135deg, rgba(33,150,243,0.3), rgba(21,101,192,0.1))',
+              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite: 'xor',
+              maskComposite: 'exclude',
+            }
+          }
+        }}
+        TransitionComponent={Fade}
+        TransitionProps={{ timeout: 400 }}
+      >
+        <DialogTitle 
+          sx={{ 
+            p: 4,
+            pb: 2,
+            fontSize: '1.75rem',
+            fontWeight: 800,
+            color: 'text.primary',
+            letterSpacing: '-0.5px'
+          }}
+        >
+          Rename Device
+        </DialogTitle>
+        <DialogContent sx={{ p: 4, pb: 2 }}>
             <TextField
               autoFocus
               margin="dense"
@@ -259,11 +548,82 @@ const DeviceCard = ({
               fullWidth
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '16px',
+                  backgroundColor: 'rgba(255,255,255,0.6)',
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'primary.main',
+                    borderWidth: '2px'
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'primary.main',
+                    borderWidth: '2px',
+                    boxShadow: '0 0 0 4px rgba(33,150,243,0.1)'
+                  }
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(33,150,243,0.2)',
+                  transition: 'all 0.3s'
+                },
+                '& .MuiInputLabel-root': {
+                  fontSize: '0.95rem',
+                  fontWeight: 500,
+                  '&.Mui-focused': {
+                    color: 'primary.main'
+                  }
+                },
+                '& .MuiInputBase-input': {
+                  fontSize: '1rem',
+                  padding: '16px 20px'
+                }
+              }}
             />
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleRename} color="primary">Rename</Button>
+          <DialogActions sx={{ px: 4, pb: 4, gap: 2 }}>
+            <Button 
+              onClick={() => setDialogOpen(false)}
+              variant="outlined"
+              sx={{ 
+                borderRadius: '12px',
+                px: 4,
+                py: 1.5,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                borderWidth: '2px',
+                '&:hover': {
+                  borderWidth: '2px',
+                  bgcolor: 'action.hover',
+                  transform: 'translateY(-2px)'
+                },
+                transition: 'all 0.3s'
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRename} 
+              color="primary"
+              variant="contained"
+              sx={{ 
+                borderRadius: '12px',
+                px: 4,
+                py: 1.5,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                boxShadow: '0 8px 16px rgba(33, 150, 243, 0.3)',
+                '&:hover': {
+                  boxShadow: '0 12px 20px rgba(33, 150, 243, 0.4)',
+                  transform: 'translateY(-2px)'
+                },
+                transition: 'all 0.3s'
+              }}
+            >
+              Rename
+            </Button>
           </DialogActions>
         </Dialog>
       </Card>
@@ -284,32 +644,208 @@ const SpeedGroup = ({ title, devices, onDrop, ...deviceActions }) => {
     <Paper
       ref={drop}
       sx={{
-        p: 2,
+        p: 4,
         minHeight: 200,
-        bgcolor: isOver ? 'action.hover' : 'background.paper',
-        transition: 'background-color 0.2s',
-        borderRadius: 2,
+        bgcolor: isOver ? 'rgba(33, 150, 243, 0.04)' : 'background.paper',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        borderRadius: '24px',
         position: 'relative',
+        border: '1px solid rgba(0,0,0,0.08)',
+        backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
+        backdropFilter: 'blur(10px)',
+        boxShadow: isOver 
+          ? '0 20px 40px rgba(33, 150, 243, 0.15), 0 8px 16px rgba(33, 150, 243, 0.1)'
+          : '0 12px 24px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04)',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          borderRadius: '24px',
+          padding: '2px',
+          background: 'linear-gradient(135deg, rgba(33,150,243,0.3), rgba(21,101,192,0.1))',
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude',
+        },
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: '0 24px 48px rgba(33, 150, 243, 0.2), 0 12px 24px rgba(33, 150, 243, 0.15)'
+        }
       }}
     >
-      <Typography variant="h6" gutterBottom color="primary">
-        {title}
-        <Chip
-          label={`${devices.length} devices`}
-          size="small"
-          sx={{ ml: 1 }}
-        />
-      </Typography>
-      <Divider sx={{ mb: 2 }} />
-      <AnimatePresence>
-        {devices.map((device) => (
-          <DeviceCard
-            key={device.ip}
-            device={device}
-            {...deviceActions}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        mb: 3 
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography 
+            variant="h5" 
+            color="primary"
+            sx={{ 
+              fontWeight: 800,
+              letterSpacing: '-0.5px',
+              background: 'linear-gradient(135deg, #2196f3, #1565c0)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              position: 'relative',
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: -4,
+                left: 0,
+                width: '40%',
+                height: '3px',
+                background: 'linear-gradient(90deg, #2196f3, transparent)',
+                borderRadius: '2px'
+              }
+            }}
+          >
+            {title}
+          </Typography>
+          <Chip
+            label={`${devices.length} devices`}
+            size="medium"
+            sx={{
+              borderRadius: '12px',
+              bgcolor: 'primary.lighter',
+              color: 'primary.main',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              height: 32,
+              px: 1,
+              border: '2px solid',
+              borderColor: 'primary.light',
+              transition: 'all 0.3s',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 8px rgba(33, 150, 243, 0.2)'
+              }
+            }}
           />
-        ))}
+        </Box>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 1,
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: '50%',
+            left: -20,
+            width: '2px',
+            height: '40px',
+            background: 'linear-gradient(to bottom, transparent, rgba(33,150,243,0.2), transparent)',
+            transform: 'translateY(-50%)'
+          }
+        }}>
+          <IconButton
+            size="small"
+            sx={{
+              bgcolor: 'primary.lighter',
+              '&:hover': {
+                bgcolor: 'primary.light',
+                transform: 'scale(1.1)'
+              },
+              transition: 'all 0.3s'
+            }}
+          >
+            <RefreshCw size={18} />
+          </IconButton>
+          <IconButton
+            size="small"
+            sx={{
+              bgcolor: 'primary.lighter',
+              '&:hover': {
+                bgcolor: 'primary.light',
+                transform: 'scale(1.1)'
+              },
+              transition: 'all 0.3s'
+            }}
+          >
+            <Settings size={18} />
+          </IconButton>
+        </Box>
+      </Box>
+      
+      <Divider 
+        sx={{ 
+          mb: 4,
+          backgroundImage: 'linear-gradient(90deg, rgba(33,150,243,0.2), transparent)',
+          height: '2px',
+          border: 'none'
+        }} 
+      />
+
+      <AnimatePresence>
+        <Box 
+          sx={{
+            display: 'grid',
+            gap: 3,
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: '20px',
+              width: '2px',
+              height: '100%',
+              background: 'linear-gradient(to bottom, transparent, rgba(33,150,243,0.1), transparent)',
+              zIndex: 0
+            }
+          }}
+        >
+          {devices.map((device) => (
+            <motion.div
+              key={device.ip}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <DeviceCard
+                device={device}
+                {...deviceActions}
+              />
+            </motion.div>
+          ))}
+        </Box>
       </AnimatePresence>
+
+      {devices.length === 0 && (
+        <Box
+          sx={{
+            textAlign: 'center',
+            py: 8,
+            px: 4,
+            bgcolor: 'rgba(33,150,243,0.02)',
+            borderRadius: '16px',
+            border: '2px dashed rgba(33,150,243,0.2)'
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 500,
+              mb: 1
+            }}
+          >
+            No devices in this group
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ opacity: 0.8 }}
+          >
+            Drag and drop devices here to add them
+          </Typography>
+        </Box>
+      )}
     </Paper>
   );
 };
@@ -455,6 +991,7 @@ const fetchStatus = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/devices?interface=${selectedInterface}`);
       const data = await response.json();
+      console.log(data,"dfhgdsjksdfhksd");
       if (data.success) {
         setDevices(data.data);
         updateSpeedGroups(data.data);
@@ -570,23 +1107,171 @@ const fetchStatus = async () => {
           <Grid container spacing={3}>
             {/* Gateway Info Card */}
             <Grid item xs={12}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Network Gateway
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="body2" color="textSecondary">
-                        IP Address: {gatewayInfo?.ip || 'N/A'}
+                            <Card
+                sx={{
+                  borderRadius: '16px',
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9))',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                    <Box
+                      sx={{
+                        bgcolor: 'primary.lighter',
+                        p: 1.5,
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Router size={24} color={theme.palette.primary.main} />
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 700,
+                          color: 'text.primary',
+                          fontSize: '1.25rem',
+                          mb: 0.5
+                        }}
+                      >
+                        Network Gateway
                       </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Primary network connection details
+                      </Typography>
+                    </Box>
+                  </Box>
+              
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                      <Paper
+                        sx={{
+                          p: 2.5,
+                          borderRadius: '12px',
+                          bgcolor: 'background.default',
+                          border: '1px solid rgba(0,0,0,0.04)'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Box
+                            sx={{
+                              bgcolor: 'info.lighter',
+                              p: 1,
+                              borderRadius: '8px'
+                            }}
+                          >
+                            <Network size={20} color={theme.palette.info.main} />
+                          </Box>
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}
+                            >
+                              IP Address
+                            </Typography>
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontFamily: 'monospace',
+                                fontWeight: 600,
+                                color: 'text.primary',
+                                fontSize: '1rem'
+                              }}
+                            >
+                              {gatewayInfo?.ip || 'Not Available'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Paper>
                     </Grid>
+              
                     <Grid item xs={12} md={6}>
-                      <Typography variant="body2" color="textSecondary">
-                        MAC Address: {gatewayInfo?.mac || 'N/A'}
-                      </Typography>
+                      <Paper
+                        sx={{
+                          p: 2.5,
+                          borderRadius: '12px',
+                          bgcolor: 'background.default',
+                          border: '1px solid rgba(0,0,0,0.04)'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Box
+                            sx={{
+                              bgcolor: 'warning.lighter',
+                              p: 1,
+                              borderRadius: '8px'
+                            }}
+                          >
+                            <Cpu size={20} color={theme.palette.warning.main} />
+                          </Box>
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}
+                            >
+                              MAC Address
+                            </Typography>
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontFamily: 'monospace',
+                                fontWeight: 600,
+                                color: 'text.primary',
+                                fontSize: '1rem'
+                              }}
+                            >
+                              {gatewayInfo?.mac || 'Not Available'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Paper>
                     </Grid>
                   </Grid>
+              
+                  {/* Status Indicator */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      mt: 2
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        bgcolor: gatewayInfo ? 'success.main' : 'error.main',
+                        boxShadow: (theme) =>
+                          `0 0 0 3px ${
+                            gatewayInfo
+                              ? theme.palette.success.lighter
+                              : theme.palette.error.lighter
+                          }`
+                      }}
+                    />
+                    <Typography
+                      variant="caption"
+                      color={gatewayInfo ? 'success.main' : 'error.main'}
+                      sx={{ fontWeight: 500 }}
+                    >
+                      {gatewayInfo ? 'Gateway Connected' : 'Gateway Unavailable'}
+                    </Typography>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>
@@ -596,7 +1281,7 @@ const fetchStatus = async () => {
             {/* Device Groups with new actions */}
             <Grid item xs={12} md={6}>
               <SpeedGroup
-                title="Unlimited Speed Devices"
+               title="Unlimited Speed Devices" 
                 devices={speedGroups.unlimited}
                 onDrop={(device) => handleDeviceDrop(device, 'unlimited')}
                 onLimitChange={handleSpeedLimit}
@@ -623,119 +1308,499 @@ const fetchStatus = async () => {
 
             {/* Network Statistics Card */}
             <Grid item xs={12}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Network Statistics
-                  </Typography>
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={3}>
-                      <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.light', color: 'white' }}>
-                        <Typography variant="h6">
-                          {devices.length}
-                        </Typography>
-                        <Typography variant="body2">
-                          Total Devices
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'white' }}>
-                        <Typography variant="h6">
-                          {devices.filter(d => d.status === 'active').length}
-                        </Typography>
-                        <Typography variant="body2">
-                          Active Devices
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light', color: 'white' }}>
-                        <Typography variant="h6">
-                          {devices.filter(d => d.speed_limit).length}
-                        </Typography>
-                        <Typography variant="body2">
-                          Limited Devices
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'error.light', color: 'white' }}>
-                        <Typography variant="h6">
-                          {devices.filter(d => d.attack_status === 'cutting').length}
-                        </Typography>
-                        <Typography variant="body2">
-                          Cut Devices
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
+            <Card
+    sx={{
+      borderRadius: '16px',
+      background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9))',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(0,0,0,0.06)',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+      transition: 'all 0.3s ease',
+      '&:hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+      }
+    }}
+  >
+    {/* Rest of the code remains the same until the Limited Devices icon */}
+    <CardContent sx={{ p: 3 }}>
+      <Typography 
+        variant="h6" 
+        gutterBottom 
+        sx={{
+          fontWeight: 700,
+          fontSize: '1.25rem',
+          color: 'text.primary',
+          mb: 3,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}
+      >
+        <TrendingUp size={24} />
+        Network Statistics
+      </Typography>
+      
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={3}>
+          <Paper 
+            sx={{ 
+              p: 3,
+              textAlign: 'center',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, primary.main, primary.dark)',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(45deg, #2196f3, #1976d2)',
+                opacity: 1
+              }
+            }}
+          >
+            <Box
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1
+              }}
+            >
+              <Box
+                sx={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(255,255,255,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 12px'
+                }}
+              >
+                <Wifi size={24} color="white" />
+              </Box>
+              <Typography 
+                variant="h4"
+                sx={{ 
+                  color: 'white',
+                  fontWeight: 700,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                {devices.length}
+              </Typography>
+              <Typography 
+                variant="body2"
+                sx={{ 
+                  color: 'rgba(255,255,255,0.9)',
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Total Devices
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <Paper 
+            sx={{ 
+              p: 3,
+              textAlign: 'center',
+              borderRadius: '12px',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(45deg, #4caf50, #2e7d32)',
+                opacity: 1
+              }
+            }}
+          >
+            <Box
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1
+              }}
+            >
+              <Box
+                sx={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(255,255,255,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 12px'
+                }}
+              >
+                <Wifi size={24} color="white" />
+              </Box>
+              <Typography 
+                variant="h4"
+                sx={{ 
+                  color: 'white',
+                  fontWeight: 700,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                {devices.filter(d => d.status === 'active').length}
+              </Typography>
+              <Typography 
+                variant="body2"
+                sx={{ 
+                  color: 'rgba(255,255,255,0.9)',
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Active Devices
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <Paper 
+            sx={{ 
+              p: 3,
+              textAlign: 'center',
+              borderRadius: '12px',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(45deg, #ff9800, #ed6c02)',
+                opacity: 1
+              }
+            }}
+          >
+            <Box
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1
+              }}
+            >
+              <Box
+                sx={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(255,255,255,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 12px'
+                }}
+              >
+                <Gauge size={24} color="white" />
+              </Box>
+              <Typography 
+                variant="h4"
+                sx={{ 
+                  color: 'white',
+                  fontWeight: 700,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                {devices.filter(d => d.speed_limit).length}
+              </Typography>
+              <Typography 
+                variant="body2"
+                sx={{ 
+                  color: 'rgba(255,255,255,0.9)',
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Limited Devices
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <Paper 
+            sx={{ 
+              p: 3,
+              textAlign: 'center',
+              borderRadius: '12px',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(45deg, #f44336, #d32f2f)',
+                opacity: 1
+              }
+            }}
+          >
+            <Box
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1
+              }}
+            >
+              <Box
+                sx={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(255,255,255,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 12px'
+                }}
+              >
+                <WifiOff size={24} color="white" />
+              </Box>
+              <Typography 
+                variant="h4"
+                sx={{ 
+                  color: 'white',
+                  fontWeight: 700,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                {devices.filter(d => d.attack_status === 'cutting').length}
+              </Typography>
+              <Typography 
+                variant="body2"
+                sx={{ 
+                  color: 'rgba(255,255,255,0.9)',
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Cut Devices
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+    </CardContent>
+  </Card>
             </Grid>
 
             {/* Bandwidth Chart */}
             <Grid item xs={12}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Network Bandwidth Usage
-                    <Tooltip title="Real-time bandwidth monitoring">
-                      <IconButton size="small" sx={{ ml: 1 }}>
-                        <VisibilityIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </Typography>
-                  <Box sx={{ width: '100%', height: 300 }}>
-                    <ResponsiveContainer>
-                      <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="time"
-                          tick={{ fontSize: 12 }}
-                          interval="preserveStartEnd"
-                        />
-                        <YAxis
-                          tick={{ fontSize: 12 }}
-                          label={{
-                            value: 'Speed (Mbps)',
-                            angle: -90,
-                            position: 'insideLeft',
-                            style: { fontSize: 12 }
-                          }}
-                        />
-                        <RechartsTooltip
-                          contentStyle={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            border: 'none',
-                            borderRadius: 8,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                          }}
-                        />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="upload"
-                          stroke={theme.palette.primary.main}
-                          strokeWidth={2}
-                          dot={false}
-                          activeDot={{ r: 6 }}
-                          name="Upload"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="download"
-                          stroke={theme.palette.secondary.main}
-                          strokeWidth={2}
-                          dot={false}
-                          activeDot={{ r: 6 }}
-                          name="Download"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </Box>
-                </CardContent>
-              </Card>
+            <Card
+    sx={{
+      borderRadius: '16px',
+      background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9))',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(0,0,0,0.06)',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+      transition: 'all 0.3s ease',
+      '&:hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+      }
+    }}
+  >
+    <CardContent sx={{ p: 3 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        mb: 3
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Activity size={24} className="text-primary" />
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              fontWeight: 700,
+              fontSize: '1.25rem',
+              color: 'text.primary'
+            }}
+          >
+            Network Bandwidth Usage
+          </Typography>
+          <Tooltip 
+            title="Real-time bandwidth monitoring" 
+            arrow
+            placement="right"
+          >
+            <IconButton 
+              size="small" 
+              sx={{ 
+                ml: 1,
+                bgcolor: 'primary.lighter',
+                '&:hover': {
+                  bgcolor: 'primary.light'
+                }
+              }}
+            >
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            px: 2,
+            py: 1,
+            borderRadius: '8px',
+            bgcolor: 'primary.lighter'
+          }}>
+            <ArrowUp size={16} className="text-primary" />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+              Upload
+            </Typography>
+          </Box>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            px: 2,
+            py: 1,
+            borderRadius: '8px',
+            bgcolor: 'secondary.lighter'
+          }}>
+            <ArrowDown size={16} className="text-secondary" />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'secondary.main' }}>
+              Download
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      <Box 
+        sx={{ 
+          width: '100%', 
+          height: 300,
+          p: 1,
+          bgcolor: 'background.paper',
+          borderRadius: '12px',
+          border: '1px solid rgba(0,0,0,0.04)'
+        }}
+      >
+        <ResponsiveContainer>
+          <LineChart data={chartData}>
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="rgba(0,0,0,0.06)"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="time"
+              tick={{ fontSize: 12, fill: 'text.secondary' }}
+              interval="preserveStartEnd"
+              axisLine={{ stroke: 'rgba(0,0,0,0.1)' }}
+              tickLine={{ stroke: 'rgba(0,0,0,0.1)' }}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fill: 'text.secondary' }}
+              axisLine={{ stroke: 'rgba(0,0,0,0.1)' }}
+              tickLine={{ stroke: 'rgba(0,0,0,0.1)' }}
+              label={{
+                value: 'Speed (Mbps)',
+                angle: -90,
+                position: 'insideLeft',
+                style: { 
+                  fontSize: 12,
+                  fill: 'text.secondary',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }
+              }}
+            />
+            <RechartsTooltip
+              contentStyle={{
+                backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                border: 'none',
+                borderRadius: '12px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                padding: '12px 16px',
+                fontSize: '12px'
+              }}
+              itemStyle={{
+                padding: '4px 0'
+              }}
+              labelStyle={{
+                fontWeight: 600,
+                marginBottom: '8px'
+              }}
+            />
+            <Legend 
+              verticalAlign="top" 
+              height={0}
+              content={() => null}
+            />
+            <Line
+              type="monotone"
+              dataKey="upload"
+              stroke={theme.palette.primary.main}
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ 
+                r: 6, 
+                strokeWidth: 2,
+                fill: theme.palette.primary.main,
+                stroke: theme.palette.primary.light
+              }}
+              name="Upload"
+            />
+            <Line
+              type="monotone"
+              dataKey="download"
+              stroke={theme.palette.secondary.main}
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ 
+                r: 6,
+                strokeWidth: 2,
+                fill: theme.palette.secondary.main,
+                stroke: theme.palette.secondary.light
+              }}
+              name="Download"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </Box>
+    </CardContent>
+  </Card>
             </Grid>
 
             {/* Floating Action Button */}
