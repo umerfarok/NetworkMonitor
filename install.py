@@ -30,7 +30,7 @@ def run_as_admin():
     
     try:
         print("Requesting administrator privileges...")
-        ctypes.windll.shell32.ShellExecuteW(
+        ret = ctypes.windll.shell32.ShellExecuteW(
             None, 
             "runas",
             sys.executable,
@@ -38,7 +38,11 @@ def run_as_admin():
             None,
             1
         )
-        return True
+        if ret > 32:  # Success
+            sys.exit(0)  # Exit the current instance
+        else:
+            print("Failed to elevate privileges")
+            return False
     except Exception as e:
         print(f"Error requesting admin rights: {e}")
         return False
@@ -77,17 +81,22 @@ def download_file(url, filename):
     """Download a file with progress indicator"""
     try:
         print(f"Downloading {filename}...")
-        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-            urllib.request.urlretrieve(
-                url, 
-                tmp_file.name, 
-                reporthook=lambda count, block_size, total_size: print(
-                    f"Progress: {count * block_size * 100 / total_size:.1f}%", 
-                    end='\r'
-                )
+        # Make sure any existing file is removed first
+        if os.path.exists(filename):
+            try:
+                os.remove(filename)
+            except:
+                pass
+                
+        urllib.request.urlretrieve(
+            url, 
+            filename,
+            reporthook=lambda count, block_size, total_size: print(
+                f"Progress: {count * block_size * 100 / total_size:.1f}%", 
+                end='\r'
             )
-            print("\nDownload complete!")
-            shutil.move(tmp_file.name, filename)
+        )
+        print("\nDownload complete!")
         return True
     except Exception as e:
         print(f"Error downloading file: {e}")
@@ -95,33 +104,27 @@ def download_file(url, filename):
 
 def install_npcap():
     """Install Npcap with user interaction"""
-    npcap_url = "https://nmap.org/npcap/dist/npcap-1.75.exe"
-    installer_path = "npcap-installer.exe"
-    
     try:
-        if not download_file(npcap_url, installer_path):
-            return False
-        
-        print("\nInstalling Npcap:")
-        print("1. The Npcap installer will open")
-        print("2. Follow the installation wizard")
-        print("3. Use default settings when asked")
-        
-        if platform.system() == "Windows":
-            os.startfile(installer_path)
-        else:
-            print("Npcap is only required for Windows")
+        # Check if Npcap is already installed
+        if os.path.exists("C:\\Windows\\System32\\Npcap"):
+            print("Npcap is already installed.")
             return True
             
+        print("\nNpcap installation:")
+        print("1. Please download Npcap from: https://nmap.org/npcap/")
+        print("2. Run the installer and follow the installation wizard")
+        print("3. Use default settings when asked")
+        
         input("\nPress Enter after completing Npcap installation...")
         
-        if os.path.exists(installer_path):
-            try:
-                os.remove(installer_path)
-            except:
-                pass
+        # Verify installation
+        if os.path.exists("C:\\Windows\\System32\\Npcap"):
+            print("Npcap installation verified successfully.")
+            return True
+        else:
+            print("Npcap installation could not be verified.")
+            return False
                 
-        return True
     except Exception as e:
         print(f"Error during Npcap installation: {e}")
         return False
