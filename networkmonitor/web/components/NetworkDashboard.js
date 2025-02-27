@@ -47,6 +47,7 @@ import {
   RestartAlt as RestartAltIcon,
   Visibility as VisibilityIcon,
   Fingerprint as FingerprintIcon,
+  Business as BusinessIcon,
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
