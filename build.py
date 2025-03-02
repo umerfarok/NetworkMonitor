@@ -11,7 +11,6 @@ APP_VERSION = "0.1.0"
 ENTRY_POINT = "networkmonitor/cli.py"
 ICON_PATH = "assets/icon.svg"  # SVG icon file
 OUTPUT_DIR = "dist"
-WEB_DIR = "networkmonitor/web"
 
 def clean_previous_builds():
     """Remove previous build artifacts"""
@@ -25,31 +24,6 @@ def clean_previous_builds():
             except Exception as e:
                 print(f"Error removing {dir_name}: {e}")
 
-def build_frontend():
-    """Build the Next.js frontend"""
-    if os.path.exists(WEB_DIR):
-        print("Building frontend...")
-        os.chdir(WEB_DIR)
-        
-        # Make sure node_modules exists
-        if not os.path.exists('node_modules'):
-            print("Installing frontend dependencies...")
-            if platform.system() == "Windows":
-                subprocess.call("npm install", shell=True)
-            else:
-                subprocess.call("npm install", shell=True)
-        
-        # Build the frontend
-        if platform.system() == "Windows":
-            subprocess.call("npm run build", shell=True)
-        else:
-            subprocess.call("npm run build", shell=True)
-            
-        os.chdir("../..")  # Return to root directory
-        print("Frontend build complete")
-    else:
-        print(f"Warning: Frontend directory not found at {WEB_DIR}")
-
 def convert_icon():
     """Convert SVG icon to platform-specific format"""
     if not os.path.exists(ICON_PATH):
@@ -59,40 +33,53 @@ def convert_icon():
     # For Windows, we need ICO
     if platform.system() == "Windows":
         try:
-            from cairosvg import svg2png
-            from PIL import Image
-            import io
-            
+            # Check if Cairo is installed
+            try:
+                import cairosvg
+                from PIL import Image
+            except ImportError:
+                print("Warning: Cairo and/or Pillow libraries not found.")
+                print("To enable icon conversion, install GTK3 runtime and required Python packages:")
+                print("1. Download GTK3 runtime from: https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases")
+                print("2. Install Python packages: pip install cairosvg Pillow")
+                print("Skipping icon conversion - using default icon")
+                return None
+
             print("Converting SVG icon to ICO...")
             ico_path = "assets/icon.ico"
             
             # First convert to PNG
-            png_data = svg2png(url=ICON_PATH, output_width=256, output_height=256)
-            png_image = Image.open(io.BytesIO(png_data))
+            png_path = "assets/icon.png"
+            cairosvg.svg2png(url=ICON_PATH, write_to=png_path, output_width=256, output_height=256)
             
-            # Convert to ICO with multiple sizes
-            sizes = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
-            icon_images = []
+            # Load PNG and convert to ICO
+            with Image.open(png_path) as png_image:
+                # Create multiple sizes
+                sizes = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
+                icon_images = []
+                
+                for size in sizes:
+                    resized_img = png_image.resize(size, Image.LANCZOS)
+                    icon_images.append(resized_img)
+                
+                # Save as ICO
+                icon_images[0].save(
+                    ico_path, 
+                    format="ICO", 
+                    sizes=[(img.width, img.height) for img in icon_images],
+                    append_images=icon_images[1:]
+                )
             
-            for size in sizes:
-                resized_img = png_image.resize(size, Image.LANCZOS)
-                icon_images.append(resized_img)
+            # Clean up temporary PNG
+            os.remove(png_path)
             
-            # Save as ICO
-            icon_images[0].save(
-                ico_path, 
-                format="ICO", 
-                sizes=[(img.width, img.height) for img in icon_images],
-                append_images=icon_images[1:]
-            )
             print(f"Icon converted and saved to {ico_path}")
             return ico_path
-        except ImportError:
-            print("Warning: cairosvg or PIL not installed. Using SVG icon directly.")
-            return ICON_PATH
+            
         except Exception as e:
             print(f"Error converting icon: {e}")
-            return ICON_PATH
+            print("Icon conversion skipped - using default icon")
+            return None
     
     # For other platforms, return the original icon
     return ICON_PATH
@@ -102,7 +89,7 @@ def build_binary():
     print(f"Building {APP_NAME} for {platform.system()}...")
     
     # Convert icon for the platform
-    icon_path = convert_icon() or ICON_PATH
+    icon_path = convert_icon()
     
     # Base PyInstaller command
     cmd = [
@@ -110,13 +97,11 @@ def build_binary():
         "--name", APP_NAME,
         "--onefile",
         "--clean",
-        "--add-data", f"{WEB_DIR}/out;networkmonitor/web/out",  # Include built frontend
-        "--add-data", "networkmonitor/requirements.txt;networkmonitor",
-        "--add-data", f"assets;assets",  # Include assets directory
+        "--noconfirm",
     ]
     
     # Add icon if exists
-    if os.path.exists(icon_path):
+    if icon_path and os.path.exists(icon_path):
         cmd.extend(["--icon", icon_path])
     
     # Add platform-specific options
@@ -124,199 +109,152 @@ def build_binary():
         cmd.append("--noconsole")
         cmd.append("--uac-admin")  # Request admin privileges on Windows
     
+    # Add required files
+    if os.path.exists("networkmonitor/requirements.txt"):
+        cmd.extend(["--add-data", "networkmonitor/requirements.txt;networkmonitor"])
+    if os.path.exists("assets"):
+        cmd.extend(["--add-data", "assets;assets"])
+    
     # Add entry point
     cmd.append(ENTRY_POINT)
     
-    # Run PyInstaller
-    subprocess.call(cmd)
-    print("Binary build complete")
+    try:
+        # Run PyInstaller
+        subprocess.check_call(cmd)
+        print("Binary build complete")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error building binary: {e}")
+        return False
 
-def create_installer():
-    """Create platform-specific installers"""
-    system = platform.system()
-    print(f"Creating installer for {system}...")
+def _find_nsis():
+    """Find NSIS installation directory"""
+    possible_paths = [
+        r"C:\Program Files (x86)\NSIS",
+        r"C:\Program Files\NSIS",
+        os.path.expandvars(r"%ProgramFiles(x86)%\NSIS"),
+        os.path.expandvars(r"%ProgramFiles%\NSIS"),
+    ]
     
-    if system == "Windows":
-        # Use NSIS to create Windows installer
-        # You need to have NSIS installed and in PATH
-        try:
-            # Generate NSIS script
-            nsis_script = f"""
-            !define APP_NAME "{APP_NAME}"
-            !define APP_VERSION "{APP_VERSION}"
-            !define EXE_NAME "{APP_NAME}.exe"
-            
-            Name "${{APP_NAME}} ${{APP_VERSION}}"
-            OutFile "{OUTPUT_DIR}/{APP_NAME}_Setup_${{APP_VERSION}}.exe"
-            InstallDir "$PROGRAMFILES\\{APP_NAME}"
-            
-            # Request admin privileges
-            RequestExecutionLevel admin
-            
-            # Pages
-            Page directory
-            Page instfiles
-            
-            # Sections
-            Section "Install"
-                SetOutPath $INSTDIR
-                
-                # Copy executable
-                File "dist\\${{EXE_NAME}}"
-                
-                # Create Start Menu shortcut
-                CreateDirectory "$SMPROGRAMS\\{APP_NAME}"
-                CreateShortcut "$SMPROGRAMS\\{APP_NAME}\\${{APP_NAME}}.lnk" "$INSTDIR\\${{EXE_NAME}}"
-                
-                # Create Desktop shortcut
-                CreateShortcut "$DESKTOP\\${{APP_NAME}}.lnk" "$INSTDIR\\${{EXE_NAME}}"
-                
-                # Create uninstaller
-                WriteUninstaller "$INSTDIR\\uninstall.exe"
-            SectionEnd
-            
-            # Uninstaller
-            Section "Uninstall"
-                Delete "$INSTDIR\\${{EXE_NAME}}"
-                Delete "$INSTDIR\\uninstall.exe"
-                
-                # Remove shortcuts
-                Delete "$SMPROGRAMS\\{APP_NAME}\\${{APP_NAME}}.lnk"
-                RMDir "$SMPROGRAMS\\{APP_NAME}"
-                Delete "$DESKTOP\\${{APP_NAME}}.lnk"
-                
-                RMDir "$INSTDIR"
-            SectionEnd
-            """
-            
-            # Write NSIS script
-            with open("installer.nsi", "w") as f:
-                f.write(nsis_script)
-            
-            # Run NSIS compiler
-            subprocess.call(["makensis", "installer.nsi"])
-            
-            # Clean up
-            os.remove("installer.nsi")
-            
-            print(f"Windows installer created: {OUTPUT_DIR}/{APP_NAME}_Setup_{APP_VERSION}.exe")
-        except Exception as e:
-            print(f"Error creating Windows installer: {e}")
-            print("Make sure NSIS is installed and in your PATH")
+    # Check if makensis is in PATH
+    try:
+        subprocess.run(["makensis", "/VERSION"], capture_output=True, check=True)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Check known installation paths
+        for path in possible_paths:
+            makensis = os.path.join(path, "makensis.exe")
+            if os.path.exists(makensis):
+                os.environ["PATH"] = os.environ["PATH"] + ";" + path
+                return True
+    return False
 
-    elif system == "Darwin":  # macOS
-        try:
-            # Create DMG file
-            dmg_path = f"{OUTPUT_DIR}/{APP_NAME}_{APP_VERSION}.dmg"
-            app_path = f"dist/{APP_NAME}.app"
-            
-            # Check if app exists (PyInstaller should create it)
-            if not os.path.exists(app_path):
-                print(f"Error: {app_path} not found. PyInstaller may not have created a proper .app bundle.")
-                return
-            
-            # Create DMG
-            subprocess.call([
-                "hdiutil", "create",
-                "-volname", f"{APP_NAME} {APP_VERSION}",
-                "-srcfolder", app_path,
-                "-ov", "-format", "UDZO",
-                dmg_path
-            ])
-            
-            print(f"macOS DMG created: {dmg_path}")
-        except Exception as e:
-            print(f"Error creating macOS DMG: {e}")
+def create_windows_installer():
+    """Create Windows installer using NSIS"""
+    print("Creating installer for Windows...")
+    try:
+        # Check if NSIS is installed
+        if not _find_nsis():
+            print("NSIS not found in PATH or standard locations.")
+            print("Please install NSIS:")
+            print("1. Download from https://nsis.sourceforge.io/Download")
+            print("2. Run the installer")
+            print("3. Add NSIS installation directory to PATH")
+            print("4. Restart your terminal/IDE")
+            return False
 
-    elif system == "Linux":
-        try:
-            # Create DEB package (for Debian/Ubuntu)
-            deb_dir = "deb_build"
-            os.makedirs(f"{deb_dir}/DEBIAN", exist_ok=True)
-            os.makedirs(f"{deb_dir}/usr/bin", exist_ok=True)
-            os.makedirs(f"{deb_dir}/usr/share/applications", exist_ok=True)
-            os.makedirs(f"{deb_dir}/usr/share/pixmaps", exist_ok=True)
+        # Generate NSIS script (without requiring EnvVarUpdate)
+        nsis_script = f"""
+        !include "MUI2.nsh"
+        
+        !define APP_NAME "{APP_NAME}"
+        !define APP_VERSION "{APP_VERSION}"
+        !define EXE_NAME "{APP_NAME}.exe"
+        
+        Name "${{APP_NAME}} ${{APP_VERSION}}"
+        OutFile "dist\\{APP_NAME}_Setup_${{APP_VERSION}}.exe"
+        InstallDir "$PROGRAMFILES\\{APP_NAME}"
+        
+        RequestExecutionLevel admin
+        
+        # Modern UI
+        !insertmacro MUI_PAGE_WELCOME
+        !insertmacro MUI_PAGE_DIRECTORY
+        !insertmacro MUI_PAGE_INSTFILES
+        !insertmacro MUI_PAGE_FINISH
+        
+        !insertmacro MUI_UNPAGE_CONFIRM
+        !insertmacro MUI_UNPAGE_INSTFILES
+        
+        !insertmacro MUI_LANGUAGE "English"
+        
+        # Default section
+        Section
+            SetOutPath "$INSTDIR"
             
-            # Copy binary
-            shutil.copy(f"dist/{APP_NAME}", f"{deb_dir}/usr/bin/{APP_NAME.lower()}")
+            # Copy main executable
+            File "dist\\${{EXE_NAME}}"
             
-            # Create desktop file
-            with open(f"{deb_dir}/usr/share/applications/{APP_NAME.lower()}.desktop", "w") as f:
-                f.write(f"""[Desktop Entry]
-Name={APP_NAME}
-Comment=Network monitoring and control tool
-Exec=/usr/bin/{APP_NAME.lower()}
-Icon={APP_NAME.lower()}
-Terminal=false
-Type=Application
-Categories=Network;Utility;
-""")
+            # Create shortcuts
+            CreateDirectory "$SMPROGRAMS\\${{APP_NAME}}"
+            CreateShortCut "$SMPROGRAMS\\${{APP_NAME}}\\${{APP_NAME}}.lnk" "$INSTDIR\\${{EXE_NAME}}"
+            CreateShortCut "$DESKTOP\\${{APP_NAME}}.lnk" "$INSTDIR\\${{EXE_NAME}}"
             
-            # Copy icon
-            if os.path.exists(ICON_PATH):
-                shutil.copy(ICON_PATH, f"{deb_dir}/usr/share/pixmaps/{APP_NAME.lower()}.svg")
+            # Write uninstaller
+            WriteUninstaller "$INSTDIR\\Uninstall.exe"
             
-            # Create control file
-            with open(f"{deb_dir}/DEBIAN/control", "w") as f:
-                f.write(f"""Package: {APP_NAME.lower()}
-Version: {APP_VERSION}
-Section: net
-Priority: optional
-Architecture: amd64
-Depends: libpcap0.8, net-tools
-Maintainer: {APP_NAME} Team
-Description: Network monitoring and control tool
- Allows scanning of local network, monitoring bandwidth,
- and controlling network access for devices.
-""")
+            # Add to PATH (basic method without EnvVarUpdate)
+            ExecWait 'cmd.exe /c setx PATH "%PATH%;$INSTDIR" /M'
             
-            # Build DEB package
-            deb_file = f"{OUTPUT_DIR}/{APP_NAME}_{APP_VERSION}_amd64.deb"
-            subprocess.call(["dpkg-deb", "--build", deb_dir, deb_file])
+            # Add uninstall information to Add/Remove Programs
+            WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${{APP_NAME}}" "DisplayName" "${{APP_NAME}}"
+            WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${{APP_NAME}}" "UninstallString" "$\\"$INSTDIR\\Uninstall.exe$\\""
+            WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${{APP_NAME}}" "DisplayVersion" "${{APP_VERSION}}"
+            WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${{APP_NAME}}" "Publisher" "Network Monitor Team"
+        SectionEnd
+
+        # Uninstaller section
+        Section "Uninstall"
+            Delete "$INSTDIR\\${{EXE_NAME}}"
+            Delete "$INSTDIR\\Uninstall.exe"
+            Delete "$SMPROGRAMS\\${{APP_NAME}}\\${{APP_NAME}}.lnk"
+            Delete "$DESKTOP\\${{APP_NAME}}.lnk"
             
-            # Clean up
-            shutil.rmtree(deb_dir)
+            RMDir "$SMPROGRAMS\\${{APP_NAME}}"
+            RMDir "$INSTDIR"
             
-            print(f"Debian package created: {deb_file}")
-            
-            # Also create generic tarball for other Linux distros
-            tar_file = f"{OUTPUT_DIR}/{APP_NAME}_{APP_VERSION}_linux.tar.gz"
-            subprocess.call([
-                "tar", "czf", tar_file,
-                "-C", "dist", APP_NAME
-            ])
-            
-            print(f"Linux tarball created: {tar_file}")
-        except Exception as e:
-            print(f"Error creating Linux packages: {e}")
-            # Create a fallback tarball
-            try:
-                tar_file = f"{OUTPUT_DIR}/{APP_NAME}_{APP_VERSION}_linux.tar.gz"
-                subprocess.call([
-                    "tar", "czf", tar_file,
-                    "-C", "dist", APP_NAME
-                ])
-                print(f"Linux tarball created: {tar_file}")
-            except Exception as e2:
-                print(f"Error creating Linux tarball: {e2}")
+            # Remove uninstall information
+            DeleteRegKey HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${{APP_NAME}}"
+        SectionEnd
+        """
+        
+        # Write NSIS script
+        with open("installer.nsi", "w") as f:
+            f.write(nsis_script)
+        
+        # Run NSIS compiler
+        subprocess.run(["makensis", "installer.nsi"], check=True)
+        print(f"Windows installer created successfully in dist/{APP_NAME}_Setup_{APP_VERSION}.exe")
+        return True
+        
+    except Exception as e:
+        print(f"Error creating Windows installer: {e}")
+        return False
 
 def main():
     """Main build function"""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
-    # Check if we have required tools
-    try:
-        import PyInstaller
-    except ImportError:
-        print("PyInstaller is not installed. Please run: pip install -r requirements-build.txt")
-        return 1
-    
+    # Clean previous builds
     clean_previous_builds()
-    build_frontend()
-    build_binary()
-    create_installer()
     
-    print(f"Build complete. Installers available in the '{OUTPUT_DIR}' directory.")
+    # Build binary
+    if build_binary():
+        # Create installer for current platform
+        if platform.system() == "Windows":
+            create_windows_installer()
+    
+    print(f"Build complete. Files available in the '{OUTPUT_DIR}' directory.")
     return 0
 
 if __name__ == "__main__":

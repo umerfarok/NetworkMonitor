@@ -8,20 +8,7 @@ from .dependency_check import DependencyChecker
 import os
 
 def create_app():
-    # Get the absolute path to the web directory
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    web_dir = os.path.join(current_dir, 'web')
-    static_dir = os.path.join(web_dir, 'public')
-    
-    if not os.path.exists(static_dir):
-        # If public directory doesn't exist, try parent directory's web/public
-        parent_web_dir = os.path.join(os.path.dirname(current_dir), 'web', 'public')
-        if os.path.exists(parent_web_dir):
-            static_dir = parent_web_dir
-
-    app = Flask(__name__, 
-                static_folder=static_dir,
-                static_url_path='')
+    app = Flask(__name__)
     CORS(app)
 
     logging.basicConfig(
@@ -61,137 +48,22 @@ def create_app():
             'data': data,
             'error': error
         }
-    
-    # HTML template for missing dependencies page
-    DEPENDENCY_ERROR_TEMPLATE = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Network Monitor - Missing Dependencies</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 20px;
-                line-height: 1.6;
-            }
-            .error-box {
-                background-color: #ffebee;
-                border-left: 5px solid #f44336;
-                padding: 15px;
-                margin-bottom: 20px;
-            }
-            .warning-box {
-                background-color: #fff8e1;
-                border-left: 5px solid #ffc107;
-                padding: 15px;
-                margin-bottom: 20px;
-            }
-            .instruction-box {
-                background-color: #e8f5e9;
-                border-left: 5px solid #4caf50;
-                padding: 15px;
-                margin-bottom: 20px;
-            }
-            h2 {
-                color: #333;
-                margin-top: 30px;
-            }
-            pre {
-                background-color: #f5f5f5;
-                padding: 10px;
-                border-radius: 5px;
-                overflow-x: auto;
-            }
-            .btn {
-                display: inline-block;
-                background-color: #2196f3;
-                color: white;
-                padding: 10px 15px;
-                text-decoration: none;
-                border-radius: 4px;
-                margin-top: 20px;
-                cursor: pointer;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>Network Monitor - Missing Dependencies</h1>
-        
-        <div class="error-box">
-            <h2>Network Monitor cannot start</h2>
-            <p>Some required dependencies are missing from your system. These need to be installed before the application can run correctly.</p>
-        </div>
-        
-        {% if missing_deps %}
-        <h2>Missing Dependencies:</h2>
-        <ul>
-            {% for dep in missing_deps %}
-            <li>{{ dep }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-        
-        {% if warnings %}
-        <div class="warning-box">
-            <h2>Warnings:</h2>
-            <ul>
-                {% for warning in warnings %}
-                <li>{{ warning }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-        
-        {% if instructions %}
-        <h2>Installation Instructions:</h2>
-        {% for title, instruction in instructions.items() %}
-        <div class="instruction-box">
-            <h3>{{ title }}</h3>
-            <pre>{{ instruction }}</pre>
-        </div>
-        {% endfor %}
-        {% endif %}
-        
-        <p>
-            <button class="btn" onclick="window.location.reload()">Check Again</button>
-        </p>
-        
-        <hr>
-        <p><small>Network Monitor v0.1.0 - <a href="https://github.com/yourusername/networkmonitor">Documentation</a></small></p>
-    </body>
-    </html>
-    """
 
     @app.route('/')
     def index():
-        """Serve the web interface or dependency error page"""
-        # Check dependencies again in case user installed something
-        is_ready, missing_deps, warnings = dependency_checker.check_all_dependencies()
-        
-        if not is_ready:
-            # Show missing dependencies page
-            instructions = dependency_checker.get_installation_instructions()
-            return render_template_string(
-                DEPENDENCY_ERROR_TEMPLATE, 
-                missing_deps=missing_deps,
-                warnings=warnings,
-                instructions=instructions
-            )
-        
-        # First try to serve index.html from static folder
-        try:
-            if os.path.exists(os.path.join(static_dir, 'index.html')):
-                return app.send_static_file('index.html')
-        except Exception as e:
-            logging.error(f"Error serving static file: {e}")
-        
-        # If no frontend is found, show API status
+        """API root endpoint showing server status"""
         return jsonify({
             "status": "running",
-            "message": "API server is running but frontend is not built. Please build the frontend first.",
-            "api_docs": "/api"
+            "version": "0.1.0",
+            "api_docs": "/api/docs",
+            "endpoints": [
+                "/api/status",
+                "/api/devices",
+                "/api/wifi/interfaces",
+                "/api/network/gateway",
+                "/api/network/summary",
+                "/api/stats/bandwidth"
+            ]
         })
 
     @app.route('/api/status', methods=['GET'])

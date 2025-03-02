@@ -1,8 +1,66 @@
-netmon.egg-info/*
-netmonitor.egg-info/*
-venv
-# genrate gitignore content
+# Python bytecode
 __pycache__/
-# https://www.toptal.com/developers/gitignore/api/python
-networkmonitor.egg-info
-./networkmonitor.egg-info
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Windows specific
+Thumbs.db
+desktop.ini
+
+# Log files
+*.log
+logs/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Build artifacts
+*.spec
+installer.nsi
+*.ico
+assets/icon.ico
+assets/icon.png
+
+# Temporary files
+.tmp/
+tmp/
+temp/
+
+# GTK3 runtime installer (Windows)
+gtk-installer.exe
+
+# NSIS installer files
+*.exe
+!dist/*.exe
+
+# Local configuration files
+*.local.conf
+*config.local.json
+
+# Environment variables
+.env
+
+# Dependency directories
+node_modules/
+jspm_packages/

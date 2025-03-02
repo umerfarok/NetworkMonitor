@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-import sys
+import platform
 
 install_requires = [
     "flask>=2.0.1,<3.0.0",
@@ -14,39 +14,32 @@ install_requires = [
     "typing-extensions>=4.0.0,<5.0.0",
 ]
 
-extras_require = {
-    "windows": [
+# Windows-specific dependencies
+if platform.system() == "Windows":
+    install_requires.extend([
         "pywin32>=305",
         "wmi>=1.5.1",
         "comtypes>=1.1.14",
-    ],
-    "linux": [
+    ])
+elif platform.system() == "Linux":
+    install_requires.extend([
         "python-iptables>=1.0.0",
         "netifaces>=0.11.0",
-    ],
-    "macos": [
+    ])
+elif platform.system() == "Darwin":
+    install_requires.extend([
         "pyobjc-framework-SystemConfiguration>=8.0",
         "netifaces>=0.11.0",
-    ],
-}
-
-# Auto-include OS-specific dependencies
-if sys.platform.startswith("win"):
-    install_requires.extend(extras_require["windows"])
-elif sys.platform.startswith("linux"):
-    install_requires.extend(extras_require["linux"])
-elif sys.platform.startswith("darwin"):
-    install_requires.extend(extras_require["macos"])
+    ])
 
 setup(
     name="networkmonitor",
     version="0.1.0",
-    description="Advanced network monitoring and control tool",
+    description="Network monitoring and control tool with RESTful API",
     author="Network Monitor Team",
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    extras_require=extras_require,  # Allows manual OS-specific installs
     entry_points={
         'console_scripts': [
             'networkmonitor=networkmonitor.cli:entry_point',
