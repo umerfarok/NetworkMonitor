@@ -3,8 +3,10 @@ pyproject.toml
 setup.py
 networkmonitor/__init__.py
 networkmonitor/cli.py
-networkmonitor/install.py
+networkmonitor/dependency_check.py
+networkmonitor/launcher.py
 networkmonitor/monitor.py
+networkmonitor/npcap_helper.py
 networkmonitor/server.py
 networkmonitor/windows.py
 networkmonitor.egg-info/PKG-INFO

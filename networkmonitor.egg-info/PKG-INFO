@@ -2,7 +2,7 @@ Metadata-Version: 2.2
 Name: networkmonitor
 Version: 0.1.0
 Summary: Network monitoring and bandwidth control tool
-Author: Your Name
+Author: Network Monitor Team
 License: MIT
 Requires-Python: >=3.8
 Requires-Dist: flask<3.0.0,>=2.0.1
