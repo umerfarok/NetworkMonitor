@@ -36,6 +36,50 @@ Before you begin, ensure you have the following installed:
      - Windows 10 SDK
      - Python development support (optional)
 
+### Ubuntu/Linux Requirements
+
+#### 1. System Dependencies
+```bash
+# Install basic build dependencies
+sudo apt update
+sudo apt install -y build-essential python3-dev python3-pip
+
+# Install Cairo and GTK3 for icon conversion
+sudo apt install -y libcairo2-dev libgirepository1.0-dev pkg-config
+
+# Install networking tools
+sudo apt install -y net-tools iptables tcpdump
+
+# Install NSIS (for creating installers on Linux)
+sudo apt install -y nsis
+```
+
+#### 2. Python Libraries
+```bash
+pip3 install cairosvg pillow pyinstaller
+```
+
+### macOS Requirements
+
+#### 1. System Dependencies
+```bash
+# Install Homebrew if not already installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install dependencies
+brew install cairo pkg-config
+brew install gtk+3
+brew install python3
+
+# Optional: Install NSIS (for cross-building Windows installers)
+brew install makensis
+```
+
+#### 2. Python Libraries
+```bash
+pip3 install cairosvg pillow pyinstaller
+```
+
 ### Python Dependencies
 
 1. Create and activate a virtual environment:
@@ -75,31 +119,57 @@ The build process will:
 4. Create an installer (on Windows, if NSIS is installed)
 
 Build outputs will be available in the `dist` directory:
-- `NetworkMonitor.exe`: Standalone executable
-- `NetworkMonitor_Setup_0.1.0.exe`: Windows installer (if NSIS was available)
+- Windows: `NetworkMonitor.exe` and `NetworkMonitor_Setup_0.1.0.exe`
+- Linux: `NetworkMonitor` executable
+- macOS: `NetworkMonitor` executable or `.app` bundle
+
+## Platform-Specific Build Notes
+
+### Linux (Ubuntu/Debian)
+Building on Linux creates a standalone executable that can be run on similar Linux distributions:
+```bash
+# Make the executable executable
+chmod +x dist/NetworkMonitor
+# Run the application
+sudo ./dist/NetworkMonitor
+```
+
+### macOS
+Building on macOS creates a standalone executable:
+```bash
+# Make the executable executable
+chmod +x dist/NetworkMonitor
+# Run the application
+sudo ./dist/NetworkMonitor
+```
+
+### Windows
+The Windows executable requires Administrator privileges to run properly:
+- Right-click on the executable
+- Select "Run as Administrator"
 
 ## Common Build Issues
 
 ### Icon Conversion Issues
 If you see "cairo library not found" errors:
-1. Install GTK3 runtime as described in prerequisites
-2. Add GTK3 bin directory to PATH
-3. Install Python packages: `pip install cairosvg Pillow`
-4. Restart your terminal/IDE
-5. Run build again
+1. Install Cairo and GTK3 as described in prerequisites for your platform
+2. Install Python packages: `pip install cairosvg Pillow`
+3. Restart your terminal/IDE
+4. Run build again
 
 ### NSIS Issues
 If installer creation fails:
 1. Ensure NSIS is installed and in PATH
-2. Install EnvVarUpdate plugin as described in prerequisites
+2. Install EnvVarUpdate plugin as described in prerequisites (Windows only)
 3. Check if the NSIS Include and Plugins directories contain the required files
-4. Run `makensis /VERSION` in terminal to verify NSIS is accessible
+4. Run `makensis -VERSION` in terminal to verify NSIS is accessible
 
 ### Missing DLL Errors
 If you see missing DLL errors when running the built executable:
-1. Install Visual C++ Redistributable 2015-2022
-2. Install GTK3 runtime if using icon conversion
-3. Ensure all dependencies are installed: `pip install -r requirements.txt`
+1. Windows: Install Visual C++ Redistributable 2015-2022
+2. Linux: Install required system libraries using apt
+3. macOS: Install required libraries using brew
+4. Ensure all dependencies are installed: `pip install -r requirements.txt`
 
 ## Development Guidelines
 
@@ -140,9 +210,9 @@ python build.py
 - Clear pip cache if needed: `python -m pip cache purge`
 
 ### Installation Issues
-- Run the installer as Administrator
-- Check Windows Event Viewer for installation errors
-- Look for error logs in `%TEMP%` directory
+- Run the installer as Administrator (Windows)
+- Run with sudo on Linux/macOS
+- Check system logs for installation errors
 
 ### Runtime Issues
 - Check logs in `networkmonitor.log`
