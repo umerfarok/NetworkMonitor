@@ -2,12 +2,23 @@ import os
 import sys
 import platform
 import subprocess
-from pathlib import Path
-import shutil
-import time
 import ctypes
+import shutil
+from pathlib import Path
+import logging
 import urllib.request
 import tempfile
+import json
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('install.log'),
+        logging.StreamHandler()
+    ]
+)
 
 def is_admin():
     """Check if the script has admin privileges"""
@@ -25,7 +36,7 @@ def run_as_admin():
         print("Please run this script with sudo")
         sys.exit(1)
         
-    script = os.path.abspath(sys.argv[0])
+    script = os.path.abspath(sys.argv[0]) 
     params = ' '.join([script] + sys.argv[1:])
     
     try:
@@ -111,12 +122,28 @@ def install_npcap():
             return True
             
         print("\nNpcap installation:")
-        print("1. Please download Npcap from: https://nmap.org/npcap/")
-        print("2. Run the installer and follow the installation wizard")
+        npcap_url = "https://nmap.org/npcap/dist/npcap-1.75.exe"
+        npcap_installer = "npcap-installer.exe"
+        
+        download_file(npcap_url, npcap_installer)
+        print("1. The Npcap installer will open")
+        print("2. Follow the installation wizard")
         print("3. Use default settings when asked")
         
-        input("\nPress Enter after completing Npcap installation...")
-        
+        # Run installer
+        if platform.system() == "Windows":
+            os.startfile(npcap_installer)
+            input("\nPress Enter after completing Npcap installation...")
+        else:
+            print("Npcap is only required on Windows")
+            
+        # Clean up installer
+        if os.path.exists(npcap_installer):
+            try:
+                os.remove(npcap_installer)
+            except:
+                pass
+            
         # Verify installation
         if os.path.exists("C:\\Windows\\System32\\Npcap"):
             print("Npcap installation verified successfully.")
@@ -195,25 +222,98 @@ def create_shortcut():
     """Create desktop shortcut"""
     try:
         desktop = Path.home() / "Desktop"
-        shortcut_path = desktop / "NetworkMonitor.bat"
         
-        with open(shortcut_path, "w") as f:
-            venv_path = os.path.abspath("venv")
-            if platform.system() == "Windows":
-                activate_path = os.path.join(venv_path, "Scripts", "activate.bat")
+        # Create directory for our app if it doesn't exist
+        app_dir = Path.home() / ".networkmonitor"
+        app_dir.mkdir(exist_ok=True)
+        
+        # Create config file if it doesn't exist
+        config_file = app_dir / "config.json"
+        if not config_file.exists():
+            config = {
+                "interface": None,
+                "port": 5000,
+                "dark_mode": False,
+                "scan_interval": 5
+            }
+            with open(config_file, "w") as f:
+                json.dump(config, f, indent=2)
+        
+        # Create shortcut based on platform
+        if platform.system() == "Windows":
+            shortcut_path = desktop / "Network Monitor.lnk"
+            
+            # Create .bat file in the app directory
+            bat_path = app_dir / "launch.bat"
+            with open(bat_path, "w") as f:
                 f.write('@echo off\n')
-                f.write(f'cd /d "%~dp0"\n')  # Change to script directory
-                f.write(f'call "{activate_path}"\n')
-                f.write('start http://localhost:5000\n')
-                f.write('networkmonitor start\n')
+                
+                # If running from source install
+                venv_path = os.path.abspath("venv")
+                if os.path.exists(venv_path):
+                    activate_path = os.path.join(venv_path, "Scripts", "activate.bat")
+                    f.write(f'cd /d "%~dp0"\n')  # Change to script directory
+                    f.write(f'call "{activate_path}"\n')
+                    f.write('networkmonitor launch\n')
+                else:
+                    # For packaged install
+                    f.write('networkmonitor launch\n')
+                    
                 f.write('pause\n')
-            else:
-                activate_path = os.path.join(venv_path, "bin", "activate")
-                f.write('#!/bin/bash\n')
-                f.write(f'source "{activate_path}"\n')
-                f.write('xdg-open http://localhost:5000\n')
-                f.write('networkmonitor start\n')
-                os.chmod(shortcut_path, 0o755)  # Make executable on Unix
+            
+            # Create Windows shortcut
+            try:
+                import win32com.client
+                shell = win32com.client.Dispatch("WScript.Shell")
+                shortcut = shell.CreateShortCut(str(shortcut_path))
+                shortcut.TargetPath = str(bat_path)
+                shortcut.WorkingDirectory = str(app_dir)
+                shortcut.IconLocation = f"{os.path.abspath(os.path.dirname(sys.executable))}\\python.exe,0"
+                shortcut.save()
+            except:
+                # Fallback if pywin32 is not installed
+                with open(desktop / "Network Monitor.bat", "w") as f:
+                    f.write('@echo off\n')
+                    f.write(f'start "" "{bat_path}"\n')
+        
+        elif platform.system() == "Linux":
+            shortcut_path = desktop / "networkmonitor.desktop"
+            with open(shortcut_path, "w") as f:
+                f.write("[Desktop Entry]\n")
+                f.write("Type=Application\n")
+                f.write("Name=Network Monitor\n")
+                f.write("Comment=Monitor and control your network\n")
+                
+                # If running from source install
+                venv_path = os.path.abspath("venv")
+                if os.path.exists(venv_path):
+                    f.write(f"Exec={venv_path}/bin/networkmonitor launch\n")
+                else:
+                    # For packaged install
+                    f.write("Exec=networkmonitor launch\n")
+                    
+                f.write("Terminal=false\n")
+                f.write("Categories=Network;Utility;\n")
+            
+            # Make executable
+            os.chmod(shortcut_path, 0o755)
+            
+        elif platform.system() == "Darwin":  # macOS
+            shortcut_path = desktop / "Network Monitor.command"
+            with open(shortcut_path, "w") as f:
+                f.write("#!/bin/bash\n")
+                
+                # If running from source install
+                venv_path = os.path.abspath("venv")
+                if os.path.exists(venv_path):
+                    f.write(f"source {venv_path}/bin/activate\n")
+                    f.write("networkmonitor launch\n")
+                else:
+                    # For packaged install
+                    f.write("networkmonitor launch\n")
+            
+            # Make executable
+            os.chmod(shortcut_path, 0o755)
                 
         print(f"Created shortcut at: {shortcut_path}")
         return True
@@ -225,15 +325,29 @@ def install_system_dependencies():
     """Install system-level dependencies"""
     try:
         if platform.system() == "Linux":
-            # Install Linux dependencies
-            commands = [
-                "apt-get update",
-                "apt-get install -y libpcap-dev python3-dev",
-                "apt-get install -y net-tools",
-            ]
-            for cmd in commands:
-                if not run_command(f"sudo {cmd}"):
-                    return False
+            # Check if we have sudo
+            has_sudo = subprocess.call(["which", "sudo"], stdout=subprocess.PIPE) == 0
+            
+            if has_sudo:
+                # Install Linux dependencies
+                commands = [
+                    "apt-get update",
+                    "apt-get install -y libpcap-dev python3-dev",
+                    "apt-get install -y net-tools",
+                ]
+                for cmd in commands:
+                    if not run_command(f"sudo {cmd}"):
+                        return False
+            else:
+                print("Warning: 'sudo' not found. System dependencies must be installed manually.")
+                print("Please install libpcap-dev, python3-dev, and net-tools.")
+                
+        # Install Windows specific dependencies
+        elif platform.system() == "Windows":
+            if not install_npcap():
+                print("Failed to install Npcap. Please install it manually.")
+                return False
+                
         return True
     except Exception as e:
         print(f"Error installing system dependencies: {e}")
@@ -254,16 +368,12 @@ def main():
             print("Failed to install system dependencies")
             return
         
-        # Install Npcap on Windows
-        if platform.system() == "Windows":
-            if not install_npcap():
-                print("Npcap installation failed. Please install it manually from https://nmap.org/npcap/")
-                return
-        
         # Setup virtual environment and install dependencies
-        if not setup_virtual_environment():
-            print("Virtual environment setup failed")
-            return
+        # Skip for packaged version
+        if os.path.isfile('setup.py'):
+            if not setup_virtual_environment():
+                print("Virtual environment setup failed")
+                return
         
         # Create shortcut
         if not create_shortcut():
@@ -271,7 +381,7 @@ def main():
         
         print("\nInstallation complete!")
         print("\nYou can start Network Monitor by:")
-        print("1. Running 'networkmonitor start' in terminal")
+        print("1. Running 'networkmonitor launch' in terminal")
         print("2. Using the desktop shortcut")
         
         input("\nPress Enter to exit...")

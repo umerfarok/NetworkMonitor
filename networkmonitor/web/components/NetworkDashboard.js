@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import {
@@ -7,7 +7,7 @@ import {
   CardContent,
   Typography,
   Grid,
-  Select,
+  Select, 
   MenuItem,
   Button,
   Slider,
@@ -872,7 +872,7 @@ const NetworkDashboard = () => {
       fetchStats();
       fetchDevices();
       fetchGatewayInfo();
-    }, 5000);
+    }, 11000);
     return () => clearInterval(interval);
   }, [selectedInterface]);
 
@@ -992,12 +992,27 @@ const fetchStatus = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/devices?interface=${selectedInterface}`);
       const data = await response.json();
-      console.log(data,"dfhgdsjksdfhksd");
       if (data.success) {
-        setDevices(data.data);
-        updateSpeedGroups(data.data);
+        // Filter out null/undefined devices and ensure required properties
+        const validDevices = data.data.filter(device => 
+          device && device.ip && device.mac && 
+          (device.status === "active" || device.status === "inactive")
+        ).map(device => ({
+          ...device,
+          hostname: device.hostname || "Unknown Device",
+          device_type: device.device_type || "Unknown",
+          vendor: device.vendor || "Unknown Vendor",
+          status: device.status || "inactive"
+        }));
+
+        setDevices(validDevices);
+        updateSpeedGroups(validDevices);
+        console.log("Processed devices:", validDevices);
+      } else {
+        console.error("Failed to fetch devices:", data.error);
       }
     } catch (error) {
+      console.error("Error fetching devices:", error);
       showNotification('Failed to fetch devices', 'error');
     }
   };
@@ -1016,10 +1031,12 @@ const fetchStatus = async () => {
   };
 
   const updateSpeedGroups = (devices) => {
-    setSpeedGroups({
-      unlimited: devices.filter(d => !d.speed_limit),
-      limited: devices.filter(d => d.speed_limit)
-    });
+    const groups = {
+      unlimited: devices.filter(d => !d.speed_limit && d.status === "active"),
+      limited: devices.filter(d => d.speed_limit && d.status === "active")
+    };
+    console.log("Updated speed groups:", groups);
+    setSpeedGroups(groups);
   };
 
   const updateChartData = (newStats) => {

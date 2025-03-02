@@ -4,19 +4,31 @@ import subprocess
 import logging
 import time
 import socket
-from scapy.all import ARP, Ether, srp, send
+import warnings
+import threading
+import queue 
+import os 
+import sys
+import requests
+import ifaddr
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
-import json
 from datetime import datetime
-import ifaddr
-import requests
-import threading
-import queue
-import os
-from scapy.layers.l2 import arping
-from scapy.sendrecv import srloop
-from scapy.arch import get_if_hwaddr
+
+# Import the Npcap helper for Windows
+if platform.system() == "Windows":
+    from .npcap_helper import initialize_npcap, verify_npcap_installation
+    import ctypes
+    import winreg
+
+# Import Scapy modules after Npcap setup
+from scapy.all import ARP, Ether, srp, send
+try:
+    from scapy.arch import get_if_hwaddr
+    from scapy.layers.l2 import arping
+    from scapy.sendrecv import srloop
+except ImportError as e:
+    logging.error(f"Failed to import Scapy modules: {e}")
 
 @dataclass
 class Device:
@@ -52,12 +64,37 @@ class NetworkController:
         self.protected_devices: List[str] = []
         self._gateway_mac = None
         self._gateway_ip = None
+        self.addrs = ifaddr.get_adapters()  # Store adapters list
         
+        # Initialize Windows system paths
         if self.os_type == "Windows":
-            self.ipconfig_path = self._get_windows_command_path("ipconfig.exe")
-            self.netsh_path = self._get_windows_command_path("netsh.exe")
-            self.arp_path = self._get_windows_command_path("arp.exe")
+            # Setup Windows command paths
+            system32 = os.path.join(os.environ['SystemRoot'], 'System32')
+            self.ipconfig_path = os.path.join(system32, "ipconfig.exe")
+            self.netsh_path = os.path.join(system32, "netsh.exe")
+            self.arp_path = os.path.join(system32, "arp.exe")
+            self.ping_path = os.path.join(system32, "ping.exe")
             
+            try:
+                from .windows import WindowsNetworkMonitor
+                self.windows_monitor = WindowsNetworkMonitor()
+                logging.info("Windows network monitor initialized")
+            except Exception as e:
+                logging.error(f"Failed to initialize Windows network monitor: {e}")
+                self.windows_monitor = None
+
+            try:
+                if not initialize_npcap():
+                    logging.warning("Npcap initialization failed, network monitoring may not work")
+                else:
+                    logging.info("Npcap initialized successfully")
+            except Exception as e:
+                logging.error(f"Error initializing Npcap: {e}")
+                
+        # Initialize measurement variables
+        self.last_measurement_time = time.time()
+        self.last_bytes_total = 0
+
     def _get_windows_command_path(self, command):
         """Get full path for Windows system commands"""
         system32 = os.path.join(os.environ['SystemRoot'], 'System32')
@@ -66,7 +103,7 @@ class NetworkController:
 
     def setup_logging(self):
         logging.basicConfig(
-            level=logging.INFO,
+            level=logging.DEBUG,  # Changed from INFO to DEBUG
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
                 logging.FileHandler('networkmonitor.log'),
@@ -300,71 +337,186 @@ class NetworkController:
 
     def get_wifi_interfaces(self) -> List[str]:
         """Get list of WiFi interfaces"""
-        wifi_interfaces = []
         try:
             if self.os_type == "Windows":
-                output = subprocess.check_output([self.netsh_path, "wlan", "show", "interfaces"], 
+                # Check if we have admin rights
+                is_admin = False
+                try:
+                    is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+                except:
+                    pass
+
+                if not is_admin:
+                    logging.warning("Not running with admin privileges - some WiFi features may be limited")
+
+                # Try Windows monitor first
+                if hasattr(self, 'windows_monitor'):
+                    try:
+                        interfaces = self.windows_monitor.get_wifi_interfaces()
+                        if interfaces:
+                            return [iface['name'] for iface in interfaces if iface.get('state', '').lower() == 'connected']
+                    except Exception as e:
+                        logging.debug(f"Windows monitor WiFi detection failed: {e}")
+
+                # Fallback to direct ipconfig parsing
+                output = subprocess.check_output([self.ipconfig_path], 
                                               text=True, 
                                               creationflags=subprocess.CREATE_NO_WINDOW)
-                if "Name" in output:
-                    for line in output.split('\n'):
-                        if "Name" in line:
-                            wifi_interfaces.append(line.split(":")[1].strip())
-            else:  # Linux/MacOS
-                interfaces = self.get_interfaces()
-                for interface in interfaces:
-                    if interface['name'].startswith(('wlan', 'wifi', 'wi-fi', 'wl','wpl')):
-                        wifi_interfaces.append(interface['name'])
+                
+                wifi_interfaces = []
+                current_interface = None
+                
+                for line in output.splitlines():
+                    line = line.strip()
+                    
+                    if line.endswith(':'):
+                        if "Wireless LAN adapter" in line:
+                            current_interface = line[:-1].strip()
+                            if current_interface.startswith('Wireless LAN adapter '):
+                                current_interface = current_interface[len('Wireless LAN adapter '):]
+                    elif current_interface and "Media disconnected" not in line:
+                        if "IPv4 Address" in line:
+                            wifi_interfaces.append(current_interface)
+                            current_interface = None
+
+                # If we found WiFi interfaces through ipconfig, use those
+                if wifi_interfaces:
+                    logging.info(f"Found WiFi interfaces through ipconfig: {wifi_interfaces}")
+                    return wifi_interfaces
+
+                # Last resort: try to find any interface with "WiFi" or "Wireless" in the name
+                all_interfaces = self.get_interfaces()
+                wifi_candidates = [
+                    iface['name'] for iface in all_interfaces 
+                    if any(wifi_term in iface['name'].lower() 
+                          for wifi_term in ['wifi', 'wireless', 'wlan'])
+                ]
+                if wifi_candidates:
+                    logging.info(f"Found WiFi interfaces by name: {wifi_candidates}")
+                    return wifi_candidates
+                    
+                return []
+                
+            # Linux/MacOS code
+            interfaces = self.get_interfaces()
+            return [interface['name'] for interface in interfaces 
+                   if interface['name'].startswith(('wlan', 'wifi', 'wi-fi', 'wl', 'wpl'))]
+                   
         except Exception as e:
             logging.error(f"Error getting WiFi interfaces: {e}")
-        return wifi_interfaces
+            return []
 
     def get_default_interface(self) -> str:
         """Get default network interface"""
         try:
             if self.os_type == "Windows":
+                # Try getting interface from WMI first
+                if hasattr(self, 'windows_monitor'):
+                    interfaces = self.windows_monitor.get_interfaces()
+                    # First try to find a WiFi interface
+                    for interface in interfaces:
+                        if interface['type'] == 'wifi' and interface['status'] == 'up':
+                            return interface['name']
+                    # If no WiFi, try any active interface
+                    for interface in interfaces:
+                        if interface['status'] == 'up':
+                            return interface['name']
+
+                # Fallback to ipconfig parsing
                 output = subprocess.check_output([self.ipconfig_path], 
                                               text=True, 
                                               creationflags=subprocess.CREATE_NO_WINDOW)
-                for line in output.split('\n'):
-                    if "Wireless LAN adapter" in line:
-                        return line.split("adapter")[-1].strip().strip(':')
-                    # Fallback to first Ethernet adapter if no wireless
-                    elif "Ethernet adapter" in line:
-                        return line.split("adapter")[-1].strip().strip(':')
+                current_section = None
+                for line in output.splitlines():
+                    line = line.strip()
+                    
+                    # Capture adapter section
+                    if line.endswith(':'):
+                        current_section = line[:-1].strip()
+                        continue
+
+                    # Look for IPv4 address in current section
+                    if current_section and "IPv4 Address" in line and ":" in line:
+                        if current_section.startswith('Wireless LAN adapter '):
+                            interface_name = current_section[len('Wireless LAN adapter '):]
+                        elif current_section.startswith('Ethernet adapter '):
+                            interface_name = current_section[len('Ethernet adapter '):]
+                        else:
+                            interface_name = current_section
+                            
+                        logging.info(f"Found active interface: {interface_name}")
+                        return interface_name
             else:
-                # Get default interface on Linux/MacOS using ifaddr
-                adapters = ifaddr.get_adapters()
-                for adapter in adapters:
+                # Linux/MacOS code
+                for adapter in self.addrs:
                     for ip in adapter.ips:
                         if isinstance(ip.ip, str) and not ip.ip.startswith('127.'):
                             return adapter.nice_name
+                            
         except Exception as e:
             logging.error(f"Error getting default interface: {e}")
         return None
 
     def get_interface_ip(self, interface: str) -> str:
-        """Get IP address of specified interface"""
+        """Get IP address for a network interface"""
         try:
             if self.os_type == "Windows":
+                logging.info(f"Getting IP for Windows interface: {interface}")
+                # Get IP using ipconfig
                 output = subprocess.check_output([self.ipconfig_path], 
                                               text=True,
                                               creationflags=subprocess.CREATE_NO_WINDOW)
+                
+                logging.debug("ipconfig output:")
+                logging.debug(output)
+                
                 current_adapter = None
-                for line in output.split('\n'):
-                    if interface in line:
-                        current_adapter = interface
-                    elif current_adapter and "IPv4 Address" in line:
-                        return line.split(":")[-1].strip().strip('(Preferred)')
+                interface_found = False
+                
+                for line in output.splitlines():
+                    line = line.strip()
+                    
+                    # Check for adapter section
+                    if line.endswith(':'):
+                        current_adapter = line[:-1].strip()
+                        if current_adapter.startswith('Ethernet adapter '):
+                            current_adapter = current_adapter[len('Ethernet adapter '):]
+                        elif current_adapter.startswith('Wireless LAN adapter '):
+                            current_adapter = current_adapter[len('Wireless LAN adapter '):]
+                        logging.debug(f"Found adapter section: {current_adapter}")
+                            
+                        # Check if this is our target interface
+                        if current_adapter and (
+                            interface.lower() in current_adapter.lower() or 
+                            current_adapter.lower() in interface.lower() or
+                            (interface.lower() == "wi-fi" and "wireless" in current_adapter.lower())
+                        ):
+                            interface_found = True
+                            logging.debug(f"Matched interface: {current_adapter}")
+                    
+                    # If we're in the right interface section
+                    elif interface_found and "IPv4 Address" in line and ":" in line:
+                        ip = line.split(":")[-1].strip()
+                        # Remove any extra parentheses
+                        ip = ip.split('(')[0].strip()
+                        logging.info(f"Found IP {ip} for interface {interface}")
+                        return ip
+                        
+                    # Reset interface_found if we hit a blank line (new section)
+                    elif not line:
+                        interface_found = False
+                        
             else:
-                addrs = ifaddr.get_adapters()
-                for adapter in addrs:
+                # Original Linux/Mac code
+                for adapter in self.addrs:
                     if adapter.nice_name == interface:
                         for ip in adapter.ips:
                             if isinstance(ip.ip, str):
                                 return ip.ip
+                                
         except Exception as e:
             logging.error(f"Error getting interface IP: {e}")
+            logging.debug(f"Exception details:", exc_info=True)
         return None
 
     def get_connected_devices(self, interface: str = None) -> List[Device]:
@@ -384,47 +536,192 @@ class NetworkController:
             subnet = self.get_subnet(ip)
             logging.info(f"Scanning subnet: {subnet}/24")
 
-            # Perform ARP scan
-            arp = ARP(pdst=f"{subnet}/24")
-            ether = Ether(dst="ff:ff:ff:ff:ff:ff")
-            packet = ether/arp
-
-            result = srp(packet, timeout=3, verbose=0, iface=interface)[0]
-            
+            # Track current time and found devices
             current_time = datetime.now()
-            
-            for sent, received in result:
-                ip_addr = received.psrc
-                mac_addr = received.hwsrc.upper()
-                
-                # Get device details
-                hostname = self.get_hostname(ip_addr)
-                vendor = self.get_vendor(mac_addr)
-                signal_strength = self.get_signal_strength(mac_addr)
-                device_type = self.guess_device_type(hostname, vendor)
-                
-                device = Device(
-                    ip=ip_addr,
-                    mac=mac_addr,
-                    hostname=hostname,
-                    vendor=vendor,
-                    device_type=device_type,
-                    signal_strength=signal_strength,
-                    last_seen=current_time
-                )
-                
-                self.devices[ip_addr] = device
+            devices_found = set()
 
-            # Update status of devices not seen in this scan
-            for ip, device in self.devices.items():
-                if device.last_seen != current_time:
+            # First, ensure we have gateway info
+            gateway_ip, gateway_mac = self._get_gateway_info()
+            if gateway_ip and gateway_mac:
+                devices_found.add(gateway_ip)
+                # Add gateway device
+                self.devices[gateway_ip] = Device(
+                    ip=gateway_ip,
+                    mac=gateway_mac,
+                    hostname="Network Router",
+                    vendor=self.get_vendor(gateway_mac),
+                    device_type="Router",
+                    last_seen=current_time,
+                    status="active"
+                )
+                logging.info(f"Gateway device found: {gateway_ip}")
+
+            # Add our own device
+            try:
+                our_mac = None
+                if self.os_type == "Windows":
+                    try:
+                        arp_output = subprocess.check_output([self.arp_path, "-a"], 
+                                                        text=True,
+                                                        creationflags=subprocess.CREATE_NO_WINDOW)
+                        for line in arp_output.splitlines():
+                            if ip in line:
+                                parts = line.split()
+                                if len(parts) >= 2:
+                                    our_mac = parts[1].replace('-', ':').upper()
+                                break
+                    except Exception as e:
+                        logging.warning(f"Could not get interface MAC: {e}")
+
+                hostname = socket.gethostname()
+                self.devices[ip] = Device(
+                    ip=ip,
+                    mac=our_mac,
+                    hostname=hostname,
+                    vendor=None,
+                    device_type="This Device",
+                    last_seen=current_time,
+                    status="active"
+                )
+                devices_found.add(ip)
+                logging.info(f"Added this device: {ip} ({hostname})")
+            except Exception as e:
+                logging.warning(f"Error adding own device: {e}")
+
+            # Use ARP scan for device discovery
+            try:
+                # Get initial ARP table
+                arp_output = subprocess.check_output([self.arp_path, "-a"], 
+                                                text=True,
+                                                creationflags=subprocess.CREATE_NO_WINDOW)
+                
+                # Process existing ARP entries first
+                for line in arp_output.splitlines():
+                    try:
+                        if "dynamic" in line.lower():
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                ip_addr = parts[0].strip()
+                                mac_addr = parts[1].replace('-', ':').upper()
+                                
+                                if ip_addr not in devices_found and ip_addr != gateway_ip:
+                                    devices_found.add(ip_addr)
+                                    
+                                    # Get device details
+                                    hostname = None
+                                    socket.setdefaulttimeout(1)
+                                    try:
+                                        hostname = socket.getfqdn(ip_addr)
+                                        if hostname == ip_addr:
+                                            hostname = None
+                                    except:
+                                        pass
+                                    finally:
+                                        socket.setdefaulttimeout(None)
+
+                                    # Get vendor and other details
+                                    vendor = self.get_vendor(mac_addr)
+                                    signal_strength = self.get_signal_strength(mac_addr)
+                                    device_type = self.guess_device_type(hostname, vendor)
+
+                                    self.devices[ip_addr] = Device(
+                                        ip=ip_addr,
+                                        mac=mac_addr,
+                                        hostname=hostname,
+                                        vendor=vendor,
+                                        device_type=device_type,
+                                        signal_strength=signal_strength,
+                                        last_seen=current_time,
+                                        status="active"
+                                    )
+                                    logging.info(f"Found device from ARP: {ip_addr} ({hostname or 'unknown'})")
+                    except Exception as e:
+                        logging.debug(f"Error processing ARP line: {e}")
+                        continue
+
+                # Now send ARP requests to entire subnet to discover new devices
+                if self.os_type == "Windows":
+                    # Use ping sweep for Windows
+                    for last_octet in range(1, 255):
+                        target_ip = f"{subnet[:-1]}{last_octet}"
+                        if target_ip not in devices_found:
+                            try:
+                                subprocess.run(["ping", "-n", "1", "-w", "100", target_ip],
+                                            stdout=subprocess.DEVNULL,
+                                            stderr=subprocess.DEVNULL,
+                                            creationflags=subprocess.CREATE_NO_WINDOW)
+                            except:
+                                pass
+
+                    # Get updated ARP table after ping sweep
+                    time.sleep(0.5)  # Wait for ARP table to update
+                    arp_output = subprocess.check_output([self.arp_path, "-a"], 
+                                                    text=True,
+                                                    creationflags=subprocess.CREATE_NO_WINDOW)
+                    
+                    # Process new ARP entries
+                    for line in arp_output.splitlines():
+                        try:
+                            if "dynamic" in line.lower():
+                                parts = line.split()
+                                if len(parts) >= 2:
+                                    ip_addr = parts[0].strip()
+                                    mac_addr = parts[1].replace('-', ':').upper()
+                                    
+                                    if ip_addr not in devices_found and ip_addr != gateway_ip:
+                                        devices_found.add(ip_addr)
+                                        
+                                        # Get device details
+                                        hostname = None
+                                        socket.setdefaulttimeout(1)
+                                        try:
+                                            hostname = socket.getfqdn(ip_addr)
+                                            if hostname == ip_addr:
+                                                hostname = None
+                                        except:
+                                            pass
+                                        finally:
+                                            socket.setdefaulttimeout(None)
+
+                                        # Get vendor and other details
+                                        vendor = self.get_vendor(mac_addr)
+                                        signal_strength = self.get_signal_strength(mac_addr)
+                                        device_type = self.guess_device_type(hostname, vendor)
+
+                                        self.devices[ip_addr] = Device(
+                                            ip=ip_addr,
+                                            mac=mac_addr,
+                                            hostname=hostname,
+                                            vendor=vendor,
+                                            device_type=device_type,
+                                            signal_strength=signal_strength,
+                                            last_seen=current_time,
+                                            status="active"
+                                        )
+                                        logging.info(f"Found new device: {ip_addr} ({hostname or 'unknown'})")
+                        except Exception as e:
+                            logging.debug(f"Error processing ARP line: {e}")
+                            continue
+
+            except Exception as e:
+                logging.error(f"Error in network scan: {str(e)}")
+
+            # Update status of devices
+            for device_ip, device in list(self.devices.items()):
+                if device_ip in devices_found:
+                    device.status = "active"
+                    device.last_seen = current_time
+                elif (current_time - device.last_seen).total_seconds() > 300:  # 5 minutes timeout
                     device.status = "inactive"
 
-            return list(self.devices.values())
+            # Return only active devices
+            active_devices = [d for d in self.devices.values() if d.status == "active"]
+            logging.info(f"Scan complete. Found {len(active_devices)} active devices")
+            return active_devices
 
         except Exception as e:
-            logging.error(f"Error scanning network: {e}")
-            return []
+            logging.error(f"Error in network scan: {str(e)}")
+            return [d for d in self.devices.values() if d.status == "active"]
 
     def get_subnet(self, ip: str) -> str:
         """Get subnet from IP address"""
@@ -462,17 +759,16 @@ class NetworkController:
     def get_signal_strength(self, mac: str) -> Optional[int]:
         """Get WiFi signal strength for device"""
         try:
-            if self.os_type == "Windows":
-                output = subprocess.check_output([self.netsh_path, "wlan", "show", "interfaces"], 
-                                              text=True,
-                                              creationflags=subprocess.CREATE_NO_WINDOW)
-                if mac.replace(':', '-').upper() in output:
-                    for line in output.split('\n'):
-                        if "Signal" in line:
-                            return int(line.split(':')[1].strip().strip('%'))
-        except:
-            pass
-        return None
+            if self.os_type == "Windows" and self.windows_monitor:
+                signal_info = self.windows_monitor.get_wifi_signal_strength()
+                # Look for the device MAC in any interface's info
+                for interface_info in signal_info.values():
+                    if interface_info.get('bssid', '').replace('-', ':').upper() == mac.upper():
+                        return interface_info.get('signal_strength')
+            return None
+        except Exception as e:
+            logging.error(f"Error getting signal strength: {e}")
+            return None
 
     def guess_device_type(self, hostname: str, vendor: str) -> str:
         """Guess device type based on hostname and vendor"""

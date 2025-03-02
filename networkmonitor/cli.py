@@ -4,10 +4,11 @@ import time
 from pathlib import Path
 import sys
 import os
+import platform
 from .server import create_app
 from .monitor import NetworkController
 
-def get_controller():
+def get_controller(): 
     """Get or create NetworkController instance"""
     if not hasattr(get_controller, 'instance'):
         get_controller.instance = NetworkController()
@@ -77,5 +78,52 @@ def status():
     else:
         click.echo("Network Monitor is not running")
 
-if __name__ == '__main__':
+@main.command()
+def launch():
+    """Launch the Network Monitor application (GUI mode)"""
+    try:
+        from .launcher import main as launch_main
+        sys.exit(launch_main())
+    except ImportError:
+        click.echo("Launcher module not found. Using standard CLI.")
+        start.callback(host='127.0.0.1', port=5000, no_browser=False)
+
+def check_admin_privileges():
+    """Check if running with admin/root privileges"""
+    try:
+        if platform.system() == "Windows":
+            import ctypes
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        else:
+            return os.geteuid() == 0
+    except:
+        return False
+
+def startup_checks():
+    """Perform startup checks before running"""
+    # Check for admin privileges
+    if not check_admin_privileges():
+        click.echo("WARNING: Network Monitor requires administrator privileges for some features.")
+        click.echo("Consider running this application as Administrator (Windows) or with sudo (Linux/Mac).")
+    
+    # Check Python version
+    if sys.version_info < (3, 8):
+        click.echo("ERROR: Python 3.8 or higher is required.")
+        sys.exit(1)
+    
+    return True
+
+# Entry point with startup checks
+def entry_point():
+    """Entry point for the application with startup checks"""
+    startup_checks()
+    
+    # If no arguments, default to GUI launch
+    if len(sys.argv) == 1:
+        sys.argv.append('launch')
+    
+    # Run the CLI
     main()
+
+if __name__ == '__main__':
+    entry_point()

@@ -1,0 +1,10 @@
+pyinstaller>=4.5.1
+setuptools>=45.0.0
+wheel>=0.36.2
+twine>=3.4.1
+cairosvg>=2.5.2
+Pillow>=9.0.0
+# For Windows installer
+pywin32>=305;platform_system=="Windows"
+# For macOS bundle
+dmgbuild>=1.6.0;platform_system=="Darwin"

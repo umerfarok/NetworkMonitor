@@ -4,3 +4,5 @@ venv
 # genrate gitignore content
 __pycache__/
 # https://www.toptal.com/developers/gitignore/api/python
+networkmonitor.egg-info
+./networkmonitor.egg-info

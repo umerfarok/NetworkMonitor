@@ -1,28 +1,57 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template_string
 from flask_cors import CORS
 from .monitor import NetworkController
 import logging
 from typing import Dict, Any
 import platform
+from .dependency_check import DependencyChecker
+import os
 
 def create_app():
-    app = Flask(__name__)
+    # Get the absolute path to the web directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    web_dir = os.path.join(current_dir, 'web')
+    static_dir = os.path.join(web_dir, 'public')
+    
+    if not os.path.exists(static_dir):
+        # If public directory doesn't exist, try parent directory's web/public
+        parent_web_dir = os.path.join(os.path.dirname(current_dir), 'web', 'public')
+        if os.path.exists(parent_web_dir):
+            static_dir = parent_web_dir
+
+    app = Flask(__name__, 
+                static_folder=static_dir,
+                static_url_path='')
     CORS(app)
 
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler('networkmonitor.log'),
+            logging.FileHandler('networkmonitor.log'),  
             logging.StreamHandler()
         ]
     )
 
+    # Check dependencies before starting
+    dependency_checker = DependencyChecker()
+    is_ready, missing_deps, warnings = dependency_checker.check_all_dependencies()
+    
+    # Log warnings and missing dependencies
+    for warning in warnings:
+        app.logger.warning(warning)
+    
+    for dep in missing_deps:
+        app.logger.error(f"Missing dependency: {dep}")
+    
     monitor = NetworkController()
     
     try:
-        monitor.start_monitoring()
-        app.logger.info("Network monitoring started")
+        if is_ready:  # Only start monitoring if all dependencies are met
+            monitor.start_monitoring()
+            app.logger.info("Network monitoring started")
+        else:
+            app.logger.warning("Network monitoring not started due to missing dependencies")
     except Exception as e:
         app.logger.error(f"Error starting monitoring: {e}")
 
@@ -32,16 +61,154 @@ def create_app():
             'data': data,
             'error': error
         }
+    
+    # HTML template for missing dependencies page
+    DEPENDENCY_ERROR_TEMPLATE = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Network Monitor - Missing Dependencies</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                line-height: 1.6;
+            }
+            .error-box {
+                background-color: #ffebee;
+                border-left: 5px solid #f44336;
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+            .warning-box {
+                background-color: #fff8e1;
+                border-left: 5px solid #ffc107;
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+            .instruction-box {
+                background-color: #e8f5e9;
+                border-left: 5px solid #4caf50;
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+            h2 {
+                color: #333;
+                margin-top: 30px;
+            }
+            pre {
+                background-color: #f5f5f5;
+                padding: 10px;
+                border-radius: 5px;
+                overflow-x: auto;
+            }
+            .btn {
+                display: inline-block;
+                background-color: #2196f3;
+                color: white;
+                padding: 10px 15px;
+                text-decoration: none;
+                border-radius: 4px;
+                margin-top: 20px;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Network Monitor - Missing Dependencies</h1>
+        
+        <div class="error-box">
+            <h2>Network Monitor cannot start</h2>
+            <p>Some required dependencies are missing from your system. These need to be installed before the application can run correctly.</p>
+        </div>
+        
+        {% if missing_deps %}
+        <h2>Missing Dependencies:</h2>
+        <ul>
+            {% for dep in missing_deps %}
+            <li>{{ dep }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        
+        {% if warnings %}
+        <div class="warning-box">
+            <h2>Warnings:</h2>
+            <ul>
+                {% for warning in warnings %}
+                <li>{{ warning }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        {% if instructions %}
+        <h2>Installation Instructions:</h2>
+        {% for title, instruction in instructions.items() %}
+        <div class="instruction-box">
+            <h3>{{ title }}</h3>
+            <pre>{{ instruction }}</pre>
+        </div>
+        {% endfor %}
+        {% endif %}
+        
+        <p>
+            <button class="btn" onclick="window.location.reload()">Check Again</button>
+        </p>
+        
+        <hr>
+        <p><small>Network Monitor v0.1.0 - <a href="https://github.com/yourusername/networkmonitor">Documentation</a></small></p>
+    </body>
+    </html>
+    """
+
+    @app.route('/')
+    def index():
+        """Serve the web interface or dependency error page"""
+        # Check dependencies again in case user installed something
+        is_ready, missing_deps, warnings = dependency_checker.check_all_dependencies()
+        
+        if not is_ready:
+            # Show missing dependencies page
+            instructions = dependency_checker.get_installation_instructions()
+            return render_template_string(
+                DEPENDENCY_ERROR_TEMPLATE, 
+                missing_deps=missing_deps,
+                warnings=warnings,
+                instructions=instructions
+            )
+        
+        # First try to serve index.html from static folder
+        try:
+            if os.path.exists(os.path.join(static_dir, 'index.html')):
+                return app.send_static_file('index.html')
+        except Exception as e:
+            logging.error(f"Error serving static file: {e}")
+        
+        # If no frontend is found, show API status
+        return jsonify({
+            "status": "running",
+            "message": "API server is running but frontend is not built. Please build the frontend first.",
+            "api_docs": "/api"
+        })
 
     @app.route('/api/status', methods=['GET'])
     def get_status():
         """Get server and monitoring status"""
         try:
+            # Check dependencies again
+            is_ready, missing_deps, warnings = dependency_checker.check_all_dependencies()
+            
             return jsonify(response(True, {
                 'server_status': 'running',
                 'monitoring_active': monitor.monitoring_thread and monitor.monitoring_thread.is_alive(),
                 'os_type': platform.system(),
-                'interface': monitor.get_default_interface()
+                'interface': monitor.get_default_interface(),
+                'dependencies_ok': is_ready,
+                'missing_dependencies': missing_deps,
+                'warnings': warnings
             }))
         except Exception as e:
             return jsonify(response(False, error=str(e))), 500
@@ -216,6 +383,12 @@ def create_app():
     def start_monitoring():
         """Start the device monitoring"""
         try:
+            # Check dependencies first
+            is_ready, missing_deps, warnings = dependency_checker.check_all_dependencies()
+            if not is_ready:
+                return jsonify(response(False, error="Missing dependencies", 
+                                        data={"missing": missing_deps})), 400
+            
             monitor.start_monitoring()
             return jsonify(response(True, {'status': 'monitoring started'}))
         except Exception as e:
@@ -235,7 +408,6 @@ def create_app():
     @app.errorhandler(404)
     def not_found(e):
         return jsonify(response(False, error='Resource not found')), 404
-    
     
     @app.route('/api/device/protect', methods=['POST'])
     def protect_device():
@@ -332,6 +504,23 @@ def create_app():
             }))
         except Exception as e:
             logging.error(f"Error getting gateway info: {str(e)}")
+            return jsonify(response(False, error=str(e))), 500
+
+    @app.route('/api/dependencies/check', methods=['GET'])
+    def check_dependencies():
+        """Check system dependencies and return status"""
+        try:
+            is_ready, missing_deps, warnings = dependency_checker.check_all_dependencies()
+            instructions = dependency_checker.get_installation_instructions() if missing_deps else {}
+            
+            return jsonify(response(True, {
+                'ready': is_ready,
+                'missing_dependencies': missing_deps,
+                'warnings': warnings,
+                'installation_instructions': instructions
+            }))
+        except Exception as e:
+            logging.error(f"Error checking dependencies: {str(e)}")
             return jsonify(response(False, error=str(e))), 500
 
     @app.errorhandler(500)
