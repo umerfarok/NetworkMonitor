@@ -1,4 +1,6 @@
-"""Network Monitor Package"""
+"""
+Network Monitor - A network monitoring and control tool
+"""
 import logging
 import sys
 import platform
@@ -6,8 +8,9 @@ import os
 from pathlib import Path
 
 __version__ = "0.1.0"
+__author__ = "Network Monitor Team"
 
-# Setup logging first
+# Setup basic logging configuration
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -19,7 +22,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Initialize Npcap early if on Windows
+# Initialize platform-specific modules
 if platform.system() == "Windows":
     try:
         logger.info("Initializing Npcap support")

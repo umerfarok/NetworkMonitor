@@ -1,128 +1,92 @@
-# Network Monitor
+# NetworkMonitor
 
-A powerful network monitoring and control tool with ARP protection capabilities.
+A powerful network monitoring and analysis tool.
 
-## Features
-- Discover all devices on your network
-- Monitor network traffic and bandwidth usage
-- Block unwanted devices
-- Protect devices from ARP spoofing attacks
-- Control device bandwidth
-- RESTful API for integration
+## Prerequisites
 
-## Quick Install 
+Before installing NetworkMonitor, ensure you have the following prerequisites installed:
 
-### Windows
-1. Download the latest installer from Releases
-2. Run the installer as Administrator
-3. Launch Network Monitor from the Start Menu or Desktop shortcut
+### System Requirements
+1. Windows 10 or later (64-bit)
+2. Python 3.9 or later
+   - Download from: https://python.org
+   - During installation, check "Add Python to PATH"
+3. Npcap (Windows only)
+   - Download from: https://npcap.com
+   - Install with "WinPcap API-compatible Mode" option
 
-### Ubuntu/Linux
-```bash
-# Install dependencies
-sudo apt update
-sudo apt install -y python3-pip python3-dev libcairo2-dev net-tools iptables
+### Administrator Privileges
+NetworkMonitor requires administrator privileges to capture network traffic.
 
-# Install Network Monitor
-pip3 install networkmonitor
+## Installation
 
-# Run with admin privileges
-sudo networkmonitor
-```
+1. Download the latest NetworkMonitor installer from the releases page.
 
-### macOS
-```bash
-# Install Homebrew if needed
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+2. Run the installer with administrator privileges.
 
-# Install dependencies
-brew install cairo python3
+3. After installation, open a command prompt with administrator privileges and install the required Python packages:
+   ```
+   pip install -r "C:\Program Files\NetworkMonitor\requirements.txt"
+   ```
 
-# Install Network Monitor
-pip3 install networkmonitor
+## Running NetworkMonitor
 
-# Run with admin privileges
-sudo networkmonitor
-```
+1. Launch NetworkMonitor from the Start Menu or desktop shortcut.
+   - Ensure you run it as administrator
+   - The application will open in your default web browser
 
-## Manual Installation
-If you prefer to install from source or need the latest development version:
+2. If you see any dependency warnings:
+   - Verify that all prerequisites are installed
+   - Check that Python packages are installed correctly
+   - Refer to the troubleshooting section below
 
-### Prerequisites
-- Python 3.8 or higher
-- Administrator privileges (required for network monitoring)
-- Platform-specific dependencies:
-  - Windows: Visual C++ Redistributable
-  - Linux: net-tools, iptables
-  - macOS: cairo library
-- See [DEVELOPER.md](DEVELOPER.md) for complete build requirements
+## Troubleshooting
 
-### Install from Source
-```bash
-# Clone repository
-git clone https://github.com/yourorg/networkmonitor.git
-cd networkmonitor
+### Common Issues
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
+1. "Npcap not found" error:
+   - Ensure Npcap is installed from https://npcap.com
+   - Try reinstalling Npcap with "WinPcap API-compatible Mode" checked
 
-# Install dependencies
-pip install -r requirements.txt
+2. Python package errors:
+   - Open an administrator command prompt
+   - Run: `pip install -r "C:\Program Files\NetworkMonitor\requirements.txt"`
 
-# Run the application (with admin privileges)
-# Windows: Run as Administrator
-python -m networkmonitor
+3. "Administrator privileges required":
+   - Right-click NetworkMonitor shortcut
+   - Select "Run as administrator"
 
-# Linux/Mac:
-sudo python -m networkmonitor
-```
+### Getting Help
 
-For detailed build instructions and development setup, see [DEVELOPER.md](DEVELOPER.md).
+If you encounter issues:
+1. Check the application logs at `%LOCALAPPDATA%\NetworkMonitor\logs`
+2. Open an issue on our GitHub repository
+3. Include error messages and logs when reporting issues
 
-## Usage
-1. Start Network Monitor (requires Administrator/root privileges)
-2. Access web interface at http://localhost:5000
-3. View connected devices and monitor network activity
-4. Use protection features as needed
+## Development Setup
 
-### Using the API
-Network Monitor provides a RESTful API for automation:
+1. Clone the repository:
+   ```
+   git clone https://github.com/networkmonitor/networkmonitor.git
+   ```
 
-```bash
-# Get network status
-curl http://localhost:5000/api/status
+2. Install development dependencies:
+   ```
+   pip install -r requirements.txt
+   pip install -r requirements-build.txt
+   ```
 
-# List connected devices
-curl http://localhost:5000/api/devices
+3. Install Node.js dependencies for the web interface:
+   ```
+   cd networkmonitor/web
+   npm install
+   ```
 
-# Protect a device
-curl -X POST http://localhost:5000/api/device/protect -d '{"ip":"192.168.1.100"}'
-```
-
-Full API documentation available at http://localhost:5000/api/docs when running.
-
-## Platform Support
-
-### Windows
-- Windows 10 or higher recommended
-- Requires Administrator privileges
-- Uses Npcap for packet capture
-
-### Linux
-- Ubuntu 20.04 or higher recommended
-- Debian, Fedora, and other major distributions supported
-- Requires root privileges
-
-### macOS
-- macOS 11 (Big Sur) or higher recommended
-- Requires root privileges
-
-## Security Notes
-- Run as Administrator/root for full functionality
-- Use device protection features responsibly
-- Keep the software updated for security fixes
+4. Build the application:
+   ```
+   python build.py
+   ```
 
 ## License
-MIT License - See LICENSE file for details
+
+[Add license information here]

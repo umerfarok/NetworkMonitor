@@ -1,308 +1,164 @@
-"""
-Network Monitor Dependency Checker
-"""
-
-import sys
-import platform
-import subprocess
-import logging
-import importlib.util
+"""Dependency checking module for NetworkMonitor"""
 import os
-import ctypes
-from typing import List, Dict, Tuple, Optional, Any
+import sys
+import logging
+import subprocess
+import pkg_resources
+import platform
 
 logger = logging.getLogger(__name__)
 
-# Required dependencies by platform
-DEPENDENCIES = {
-    "common": ["flask", "click", "scapy", "psutil", "ifaddr"],
-    "Windows": ["wmi", "win32com", "pywin32"],
-    "Linux": ["iptc"],  # python-iptables
-    "Darwin": ["netifaces"]  # For macOS
-}
-
-# Npcap paths to check on Windows
-NPCAP_PATHS = [
-    r"C:\Windows\System32\Npcap",
-    r"C:\Program Files\Npcap",
-    r"C:\Program Files (x86)\Npcap"
-]
-
-
 class DependencyChecker:
-    """Class for checking and managing dependencies for Network Monitor"""
+    """Class for checking and managing NetworkMonitor dependencies"""
     
     def __init__(self):
-        self.current_os = platform.system()
-        self.logger = logging.getLogger(__name__)
+        """Initialize the dependency checker"""
+        self.checks = [
+            ("Python Version", self._check_python_version),
+        ]
+        
+        if platform.system() == "Windows":
+            self.checks.append(("Npcap", self._check_npcap))
+        
+        self.checks.append(("Python Packages", self._check_pip_packages))
     
-    def is_admin(self) -> bool:
-        """Check if the application is running with administrative privileges."""
-        try:
-            if platform.system() == "Windows":
-                return ctypes.windll.shell32.IsUserAnAdmin() != 0
-            else:
-                return os.geteuid() == 0
-        except Exception:
-            return False
-
-    def check_all_dependencies(self) -> Tuple[bool, List[str], List[str]]:
+    def check_all_dependencies(self):
         """
         Check all dependencies and return status
         
         Returns:
-            Tuple of (is_ready, missing_dependencies, warnings)
+            Tuple[bool, List[str], List[str]]: (passed, missing_deps, warnings)
         """
-        missing, warnings = self.check_dependencies()
-        return len(missing) == 0, missing, warnings
-
-    def check_dependencies(self) -> Tuple[List[str], List[str]]:
-        """
-        Check for required dependencies based on the platform.
-        
-        Returns:
-            Tuple containing lists of missing dependencies and warnings
-        """
-        missing = []
+        all_passed = True
+        missing_deps = []
         warnings = []
         
-        # Check admin privileges
-        if not self.is_admin():
-            warnings.append("Network Monitor is not running with administrative privileges. Some features may not work.")
-        
-        # Check common dependencies
-        for dep in DEPENDENCIES["common"]:
-            if not importlib.util.find_spec(dep):
-                missing.append(dep)
-
-        # Check OS-specific dependencies
-        if self.current_os in DEPENDENCIES:
-            for dep in DEPENDENCIES[self.current_os]:
-                if dep == "pywin32":
-                    try:
-                        import win32com
-                        import win32api
-                        import win32con
-                    except ImportError:
-                        missing.append(dep)
-                else:
-                    if not importlib.util.find_spec(dep):
-                        missing.append(dep)
-
-        # Special checks for Windows
-        if self.current_os == "Windows":
-            # Check Npcap
-            npcap_status = self.check_npcap()
-            if not npcap_status.get('scapy_compatible', False):
-                missing.append("Npcap packet capture library")
-                warning_msg = npcap_status.get('error') or "Npcap not properly configured"
-                warnings.append(warning_msg)
-        
-        # Specific checks for Linux
-        elif self.current_os == "Linux":
-            # Check if we have permission to use raw sockets
-            if not self.can_use_raw_sockets():
-                warnings.append("Cannot use raw sockets. Some monitoring features may not work.")
-        
-        return missing, warnings
-
-    def check_npcap(self) -> Dict[str, Any]:
-        """
-        Check Npcap installation and configuration status
-        
-        Returns:
-            Dict containing Npcap status information
-        """
-        status = {
-            'installed': False,
-            'scapy_compatible': False,
-            'path': None,
-            'status': 'not_installed',
-            'error': None,
-            'dll_files': []
-        }
-        
-        # Check for Npcap installation
-        for path in NPCAP_PATHS:
-            if os.path.exists(path):
-                status['installed'] = True
-                status['path'] = path
-                status['status'] = 'installed'
-                
-                # Check for critical DLLs
-                wpcap_dll = os.path.join(path, "wpcap.dll")
-                packet_dll = os.path.join(path, "Packet.dll")
-                
-                if os.path.exists(wpcap_dll):
-                    status['dll_files'].append("wpcap.dll")
-                
-                if os.path.exists(packet_dll):
-                    status['dll_files'].append("Packet.dll")
-                
-                break
-        
-        # If installed, check Scapy compatibility
-        if status['installed']:
-            try:
-                # First check if we can import Scapy
-                import scapy.all
-                
-                # Try to import and use the Windows-specific module
-                try:
-                    from scapy.arch.windows import get_windows_if_list
-                    interfaces = get_windows_if_list()
-                    
-                    # If we got here without an exception, Npcap is working with Scapy
-                    status['scapy_compatible'] = True
-                except ImportError as e:
-                    status['status'] = 'import_error'
-                    status['error'] = f"Scapy Windows module not available: {str(e)}"
-                except Exception as e:
-                    status['status'] = 'config_error'
-                    status['error'] = f"Scapy cannot use Npcap: {str(e)}"
-                    
-            except Exception as e:
-                status['error'] = f"Error checking Scapy compatibility: {str(e)}"
-        
-        return status
-
-    def fix_npcap(self) -> Tuple[bool, str]:
-        """
-        Attempt to fix Npcap integration with Scapy
-        
-        Returns:
-            Tuple of (success, message)
-        """
-        if platform.system() != "Windows":
-            return False, "Npcap fix is only applicable on Windows"
-        
-        try:
-            # Try to import the npcap_helper module
-            from .npcap_helper import initialize_npcap, get_npcap_info
-            
-            # Run initialization
-            success = initialize_npcap()
-            
-            if success:
-                npcap_info = get_npcap_info()
-                return True, f"Npcap initialized successfully: {npcap_info}"
+        for name, check_func in self.checks:
+            passed, message = check_func()
+            if not passed:
+                all_passed = False
+                missing_deps.append(f"{name}: {message}")
+                logger.error(f"Dependency check failed - {name}: {message}")
             else:
-                return False, "Failed to initialize Npcap"
+                logger.info(f"Dependency check passed - {name}")
         
-        except Exception as e:
-            return False, f"Error fixing Npcap: {str(e)}"
-
-    def can_use_raw_sockets(self) -> bool:
-        """Check if the application can use raw sockets (needed for packet capture)"""
+        return all_passed, missing_deps, warnings
+    
+    def _check_python_version(self):
+        """Check if Python version meets requirements"""
+        required_version = (3, 9)
+        current_version = sys.version_info[:2]
+        
+        if current_version < required_version:
+            return False, f"Python {required_version[0]}.{required_version[1]} or higher required (current: {current_version[0]}.{current_version[1]})"
+        return True, None
+    
+    def _check_npcap(self):
+        """Check if Npcap is installed (Windows only)"""
+        if platform.system() != "Windows":
+            return True, None
+            
+        # Check for Npcap installation
+        npcap_paths = [
+            "C:\\Windows\\System32\\Npcap",
+            "C:\\Program Files\\Npcap",
+            "C:\\Program Files (x86)\\Npcap"
+        ]
+        
+        for path in npcap_paths:
+            if os.path.exists(path):
+                return True, None
+                
+        return False, "Npcap is not installed. Please download and install from https://npcap.com"
+    
+    def _check_pip_packages(self):
+        """Check if required pip packages are installed"""
         try:
-            import socket
-            s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
-            s.close()
-            return True
-        except Exception:
-            return False
-
-    def get_installation_instructions(self) -> Dict[str, str]:
-        """
-        Get installation instructions for missing dependencies
-        
-        Returns:
-            Dict mapping dependency name to installation instructions
-        """
-        return {
-            "flask": "Install with: pip install flask",
-            "click": "Install with: pip install click",
-            "scapy": "Install with: pip install scapy",
-            "psutil": "Install with: pip install psutil",
-            "ifaddr": "Install with: pip install ifaddr",
-            "wmi": "Install with: pip install wmi",
-            "win32com": "Install with: pip install pywin32",
-            "pywin32": "Install with: pip install pywin32",
-            "iptc": "Install with: pip install python-iptables",
-            "netifaces": "Install with: pip install netifaces",
-            "Npcap packet capture library": "Download and install from https://npcap.com/#download. Be sure to check the 'Install Npcap in WinPcap API-compatible Mode' option during installation."
+            with open(os.path.join(os.path.dirname(__file__), '..', 'requirements.txt'), 'r') as f:
+                required = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+            
+            # Filter platform-specific requirements
+            if platform.system() == "Windows":
+                required = [req for req in required if "sys_platform == 'linux'" not in req]
+            else:
+                required = [req for req in required if "sys_platform == 'win32'" not in req]
+                
+            # Clean up conditional markers
+            required = [req.split(';')[0].strip() for req in required]
+            
+            pkg_resources.require(required)
+            return True, None
+        except pkg_resources.DistributionNotFound as e:
+            return False, f"Missing Python package: {e.req}"
+        except pkg_resources.VersionConflict as e:
+            return False, f"Version conflict: {e.req}"
+        except Exception as e:
+            return False, f"Error checking Python packages: {str(e)}"
+    
+    def get_installation_instructions(self):
+        """Get detailed installation instructions for missing dependencies"""
+        instructions = {
+            "Python Version": """
+Python 3.9 or later is required.
+Download and install from https://python.org
+""",
+            "Npcap": """
+Npcap is required for network packet capture.
+1. Download from https://npcap.com
+2. Run the installer as administrator
+3. Select "Install Npcap in WinPcap API-compatible Mode"
+""",
+            "Python Packages": """
+Required Python packages are missing.
+Run the following command to install them:
+pip install -r requirements.txt
+"""
         }
+        return instructions
 
-    def check_all(self) -> Dict:
-        """
-        Run all dependency checks and return a detailed report
-        
-        Returns:
-            Dict containing dependency check results
-        """
-        missing, warnings = self.check_dependencies()
-        
-        result = {
-            "missingDeps": missing,
-            "warnings": warnings,
-            "isAdmin": self.is_admin(),
-            "instructions": self.get_installation_instructions(),
-        }
-        
-        # Add Npcap status for Windows
-        if platform.system() == "Windows":
-            result["npcapStatus"] = self.check_npcap()
-        
-        return result
+# For backwards compatibility, keep the standalone functions
+def check_python_version():
+    """Check if Python version meets requirements"""
+    return DependencyChecker()._check_python_version()
 
+def check_npcap():
+    """Check if Npcap is installed (Windows only)"""
+    return DependencyChecker()._check_npcap()
 
-# Keep the function-based API for backward compatibility
-def is_admin() -> bool:
-    """Check if the application is running with administrative privileges."""
+def check_pip_packages():
+    """Check if required pip packages are installed"""
+    return DependencyChecker()._check_pip_packages()
+
+def check_system_requirements():
+    """Check system requirements and dependencies"""
     checker = DependencyChecker()
-    return checker.is_admin()
+    all_passed, missing_deps, _ = checker.check_all_dependencies()
+    
+    message = ""
+    if not all_passed:
+        installation_guide = """
+Please install the missing requirements:
 
-def check_dependencies() -> Tuple[List[str], List[str]]:
-    """Check for required dependencies based on the platform."""
-    checker = DependencyChecker()
-    return checker.check_dependencies()
+1. Python 3.9 or later:
+   - Download from https://python.org
 
-def check_npcap() -> Dict[str, Any]:
-    """Check Npcap installation and configuration status"""
-    checker = DependencyChecker()
-    return checker.check_npcap()
+2. Npcap (Windows only):
+   - Download from https://npcap.com
+   - Install with "WinPcap API-compatible Mode" option
 
-def fix_npcap() -> Tuple[bool, str]:
-    """Attempt to fix Npcap integration with Scapy"""
-    checker = DependencyChecker()
-    return checker.fix_npcap()
+3. Python packages:
+   - Run: pip install -r requirements.txt
 
-def can_use_raw_sockets() -> bool:
-    """Check if the application can use raw sockets"""
-    checker = DependencyChecker()
-    return checker.can_use_raw_sockets()
-
-def get_missing_dependency_info() -> Dict[str, str]:
-    """Get installation instructions for missing dependencies"""
-    checker = DependencyChecker()
-    return checker.get_installation_instructions()
-
-def check_all() -> Dict:
-    """Run all dependency checks and return a detailed report"""
-    checker = DependencyChecker()
-    return checker.check_all()
-
+For detailed installation instructions, please refer to the documentation.
+"""
+        message = "\n".join(missing_deps) + "\n" + installation_guide
+    
+    return all_passed, message
 
 if __name__ == "__main__":
-    # Configure basic logging
     logging.basicConfig(level=logging.INFO)
-    
-    # Create a checker instance
-    checker = DependencyChecker()
-    
-    # Check dependencies
-    missing, warnings = checker.check_dependencies()
-    
-    # Print results
-    if missing:
-        logger.error(f"Missing dependencies: {', '.join(missing)}")
-    else:
-        logger.info("All required dependencies are installed")
-        
-    for warning in warnings:
-        logger.warning(warning)
-    
-    # Special checks for Windows
-    if platform.system() == "Windows":
-        npcap_status = checker.check_npcap()
-        logger.info(f"Npcap status: {npcap_status}")
+    passed, message = check_system_requirements()
+    if not passed:
+        print(message)
+        sys.exit(1)
+    print("All dependency checks passed!")
