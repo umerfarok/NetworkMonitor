@@ -18,6 +18,16 @@ Before installing NetworkMonitor, ensure you have the following prerequisites in
 ### Administrator Privileges
 NetworkMonitor requires administrator privileges to capture network traffic.
 
+## Features
+
+- Modern dark-themed user interface
+- System tray support for background operation
+- Real-time network monitoring and analysis
+- Interactive status dashboard
+- One-click web interface access
+- Professional status indicators and notifications
+- Background operation support
+
 ## Installation
 
 1. Download the latest NetworkMonitor installer from the releases page.
@@ -33,9 +43,22 @@ NetworkMonitor requires administrator privileges to capture network traffic.
 
 1. Launch NetworkMonitor from the Start Menu or desktop shortcut.
    - Ensure you run it as administrator
-   - The application will open in your default web browser
+   - A modern status dashboard will appear showing the application status
+   - The web interface will open automatically in your default browser
 
-2. If you see any dependency warnings:
+2. Using the Status Dashboard:
+   - Monitor application status through the visual indicator
+   - Click "Open in Browser" to access the web interface
+   - Use "Run in Background" to minimize to system tray
+   - Copy the web interface URL with one click
+   - Exit safely using the Exit button
+
+3. System Tray Features:
+   - Minimize the application to system tray for background operation
+   - Right-click the tray icon for quick access to common actions
+   - Double-click to restore the dashboard window
+
+4. If you see any dependency warnings:
    - Verify that all prerequisites are installed
    - Check that Python packages are installed correctly
    - Refer to the troubleshooting section below
@@ -55,6 +78,11 @@ NetworkMonitor requires administrator privileges to capture network traffic.
 3. "Administrator privileges required":
    - Right-click NetworkMonitor shortcut
    - Select "Run as administrator"
+
+4. UI Display Issues:
+   - Ensure your Windows theme is set to 100% scaling
+   - Update your graphics drivers
+   - Try running with compatibility mode if needed
 
 ### Getting Help
 

@@ -49,10 +49,27 @@ def show_error_dialog(message, detail=None):
             print("\nDetails:", detail)
 
 def create_status_window():
-    """Create a status window that keeps the application running"""
+    """Create a modern, professional status window that keeps the application running"""
     root = tk.Tk()
     root.title("NetworkMonitor Status")
-    root.geometry("400x200")
+    root.geometry("500x300")  # Increased size for better visibility
+    root.minsize(500, 300)  # Set minimum size
+    
+    # Define color scheme
+    COLORS = {
+        'bg': '#1e1e1e',  # Dark background
+        'fg': '#e0e0e0',  # Light text
+        'accent': '#007acc',  # Blue accent
+        'success': '#2ecc71',  # Green
+        'error': '#e74c3c',  # Red
+        'warning': '#f1c40f',  # Yellow
+        'header_bg': '#252526',  # Slightly lighter than bg
+        'button_bg': '#333333',  # Button background
+        'button_hover': '#404040'  # Button hover
+    }
+    
+    # Configure root window
+    root.configure(bg=COLORS['bg'])
     
     # Add icon if available
     try:
@@ -62,31 +79,160 @@ def create_status_window():
     except Exception as e:
         logger.warning(f"Could not load icon: {e}")
     
-    # Status label
-    status_var = tk.StringVar(value="Starting NetworkMonitor...")
-    status_label = tk.Label(root, textvariable=status_var, font=("Arial", 12))
-    status_label.pack(pady=20)
+    # Create main container with padding
+    main_frame = tk.Frame(root, bg=COLORS['bg'], padx=20, pady=15)
+    main_frame.pack(fill=tk.BOTH, expand=True)
     
-    # URL label
-    url_label = tk.Label(root, text="Web interface available at:", font=("Arial", 10))
-    url_label.pack(pady=5)
+    # Header with gradient effect
+    header_frame = tk.Frame(main_frame, bg=COLORS['header_bg'], height=60)
+    header_frame.pack(fill=tk.X, pady=(0, 15))
+    header_frame.pack_propagate(False)  # Maintain fixed height
+    
+    header_label = tk.Label(
+        header_frame, 
+        text="NetworkMonitor",
+        font=("Segoe UI", 18, "bold"),
+        bg=COLORS['header_bg'],
+        fg=COLORS['fg']
+    )
+    header_label.place(relx=0.5, rely=0.5, anchor='center')
+    
+    # Status section with background
+    status_frame = tk.Frame(main_frame, bg=COLORS['header_bg'], height=40)
+    status_frame.pack(fill=tk.X, pady=(0, 15))
+    status_frame.pack_propagate(False)
+    
+    status_var = tk.StringVar(value="Starting NetworkMonitor...")
+    status_label = tk.Label(
+        status_frame,
+        textvariable=status_var,
+        font=("Segoe UI", 10),
+        bg=COLORS['header_bg'],
+        fg=COLORS['fg']
+    )
+    status_label.place(relx=0.02, rely=0.5, anchor='w')
+    
+    # Status indicator dot
+    status_indicator = tk.Canvas(
+        status_frame,
+        width=10,
+        height=10,
+        bg=COLORS['header_bg'],
+        highlightthickness=0
+    )
+    status_indicator.place(relx=0.98, rely=0.5, anchor='e')
+    
+    # Draw initial status dot
+    status_indicator.create_oval(0, 0, 10, 10, fill=COLORS['warning'], outline='')
+    
+    # URL section with modern styling
+    url_frame = tk.Frame(main_frame, bg=COLORS['bg'])
+    url_frame.pack(fill=tk.X, pady=(0, 15))
+    
+    url_label = tk.Label(
+        url_frame,
+        text="Web Interface:",
+        font=("Segoe UI", 10),
+        bg=COLORS['bg'],
+        fg=COLORS['fg']
+    )
+    url_label.pack(side=tk.LEFT, padx=(0, 5))
     
     url_var = tk.StringVar(value="http://localhost:5000")
-    url_value = tk.Label(root, textvariable=url_var, font=("Arial", 10, "underline"), fg="blue")
-    url_value.pack(pady=5)
+    url_value = tk.Label(
+        url_frame,
+        textvariable=url_var,
+        font=("Segoe UI", 10, "underline"),
+        bg=COLORS['bg'],
+        fg=COLORS['accent'],
+        cursor="hand2"
+    )
+    url_value.pack(side=tk.LEFT, padx=(0, 10))
     
-    # Add button to open browser
-    def open_browser():
-        webbrowser.open(url_var.get())
+    # Add hover effect for URL
+    def on_url_hover(event): url_value.configure(fg=COLORS['success'])
+    def on_url_leave(event): url_value.configure(fg=COLORS['accent'])
+    url_value.bind('<Enter>', on_url_hover)
+    url_value.bind('<Leave>', on_url_leave)
+    url_value.bind('<Button-1>', lambda e: webbrowser.open(url_var.get()))
     
-    open_button = tk.Button(root, text="Open in Browser", command=open_browser)
-    open_button.pack(pady=10)
+    # Add copy button with modern styling
+    def copy_url():
+        root.clipboard_clear()
+        root.clipboard_append(url_var.get())
+        copy_button.configure(text="✓ Copied")
+        root.after(2000, lambda: copy_button.configure(text="Copy"))
     
-    # Add exit button
-    exit_button = tk.Button(root, text="Exit NetworkMonitor", command=lambda: (root.destroy(), os._exit(0)))
-    exit_button.pack(pady=10)
+    copy_button = tk.Button(
+        url_frame,
+        text="Copy",
+        command=copy_url,
+        font=("Segoe UI", 9),
+        bg=COLORS['button_bg'],
+        fg=COLORS['fg'],
+        activebackground=COLORS['button_hover'],
+        activeforeground=COLORS['fg'],
+        relief=tk.FLAT,
+        padx=10
+    )
+    copy_button.pack(side=tk.LEFT)
     
-    return root, status_var, url_var
+    # Button container
+    button_frame = tk.Frame(main_frame, bg=COLORS['bg'])
+    button_frame.pack(fill=tk.X, pady=(10, 0))
+    
+    # Create modern-styled button
+    def create_button(text, command, width=15, **kwargs):
+        btn = tk.Button(
+            button_frame,
+            text=text,
+            command=command,
+            font=("Segoe UI", 9),
+            bg=COLORS['button_bg'],
+            fg=COLORS['fg'],
+            activebackground=COLORS['button_hover'],
+            activeforeground=COLORS['fg'],
+            relief=tk.FLAT,
+            width=width,
+            padx=10,
+            pady=5,
+            **kwargs
+        )
+        return btn
+    
+    # Add buttons with hover effect
+    open_button = create_button("Open in Browser", lambda: webbrowser.open(url_var.get()))
+    open_button.pack(side=tk.LEFT, padx=(0, 5))
+    
+    def minimize_to_tray():
+        root.withdraw()
+        # Add tray icon functionality here if needed
+        # This will be handled by the system tray implementation
+    
+    minimize_button = create_button("Run in Background", minimize_to_tray, width=20)
+    minimize_button.pack(side=tk.LEFT, padx=5)
+    
+    exit_button = create_button("Exit", lambda: (root.destroy(), os._exit(0)), width=10)
+    exit_button.pack(side=tk.RIGHT)
+    
+    # Function to update status
+    def update_status(running=False, message=None):
+        if running:
+            status_var.set("NetworkMonitor is running")
+            status_indicator.delete('all')
+            status_indicator.create_oval(0, 0, 10, 10, fill=COLORS['success'], outline='')
+            open_button.configure(state=tk.NORMAL)
+        else:
+            status_msg = message if message else "Starting..."
+            status_var.set(status_msg)
+            status_indicator.delete('all')
+            status_indicator.create_oval(0, 0, 10, 10, fill=COLORS['warning'], outline='')
+            open_button.configure(state=tk.DISABLED)
+    
+    # Initial status update
+    update_status(False, "Starting NetworkMonitor...")
+    
+    return root, status_var, url_var, update_status
 
 def run_with_exception_handling():
     """Run the application with detailed exception handling"""
@@ -107,7 +253,7 @@ def run_with_exception_handling():
             return 1
         
         # Create status window first
-        status_window, status_var, url_var = create_status_window()
+        status_window, status_var, url_var, update_status = create_status_window()
         
         # Start the launcher in a background thread to prevent blocking the UI
         server_started = False
@@ -175,18 +321,18 @@ def run_with_exception_handling():
         launcher_thread.start()
         
         # Update status periodically
-        def update_status():
+        def update_status_periodically():
             if server_started:
-                status_var.set("NetworkMonitor is running")
+                update_status(True)
             elif server_error:
-                status_var.set(f"Error: {server_error[:40]}...")
+                update_status(False, f"Error: {server_error[:40]}...")
                 # Show error dialog after a delay to ensure it appears after the window
                 status_window.after(1000, lambda: show_error_dialog("NetworkMonitor Error", server_error))
             else:
-                status_var.set("Starting NetworkMonitor...")
-                status_window.after(1000, update_status)
+                update_status(False, "Starting NetworkMonitor...")
+                status_window.after(1000, update_status_periodically)
         
-        status_window.after(100, update_status)
+        status_window.after(100, update_status_periodically)
         
         # Keep the application running
         status_window.protocol("WM_DELETE_WINDOW", lambda: (status_window.destroy(), os._exit(0)))

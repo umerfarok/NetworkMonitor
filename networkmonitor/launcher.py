@@ -181,12 +181,48 @@ def create_console_window():
             console_root.geometry("900x600")
             console_root.minsize(800, 500)
             
+            # Set dark mode colors
+            COLORS = {
+                'bg': '#1e1e1e',  # Dark background
+                'fg': '#e0e0e0',  # Light text
+                'accent': '#007acc',  # Blue accent
+                'success': '#2ecc71',  # Green
+                'error': '#e74c3c',  # Red
+                'warning': '#f1c40f',  # Yellow
+                'header_bg': '#252526',  # Slightly lighter than bg
+                'button_bg': '#333333',  # Button background
+                'button_hover': '#404040',  # Button hover
+                'input_bg': '#2d2d2d'  # Input background
+            }
+            
             # Configure the window style
             style = ttk.Style()
-            style.configure('TFrame', background='#f0f0f0')
-            style.configure('Header.TLabel', font=('Arial', 16, 'bold'), background='#f0f0f0')
-            style.configure('Status.TLabel', font=('Arial', font_size), background='#f0f0f0')
-            style.configure('URL.TLabel', font=('Arial', font_size, 'underline'), foreground='blue', background='#f0f0f0')
+            
+            # Configure common styles
+            style.configure('Main.TFrame', background=COLORS['bg'])
+            style.configure('Header.TFrame', background=COLORS['header_bg'])
+            style.configure('Header.TLabel', 
+                          font=('Segoe UI', 20, 'bold'), 
+                          background=COLORS['header_bg'], 
+                          foreground=COLORS['fg'])
+            style.configure('Status.TLabel', 
+                          font=('Segoe UI', font_size), 
+                          background=COLORS['bg'], 
+                          foreground=COLORS['fg'])
+            style.configure('URL.TLabel', 
+                          font=('Segoe UI', font_size, 'underline'), 
+                          foreground=COLORS['accent'], 
+                          background=COLORS['bg'])
+            
+            # Configure custom button style
+            style.configure('Custom.TButton',
+                          font=('Segoe UI', button_font_size),
+                          background=COLORS['button_bg'],
+                          foreground=COLORS['fg'],
+                          borderwidth=0,
+                          padding=10)
+            style.map('Custom.TButton',
+                     background=[('active', COLORS['button_hover'])])
             
             # Set window icon if available
             try:
@@ -201,74 +237,138 @@ def create_console_window():
             except Exception as e:
                 logger.debug(f"Could not set window icon: {e}")
             
+            # Configure root window
+            console_root.configure(bg=COLORS['bg'])
+            
             # Create main container with padding
-            main_frame = ttk.Frame(console_root, padding=(20, 10, 20, 10), style='TFrame')
+            main_frame = ttk.Frame(console_root, style='Main.TFrame', padding=(20, 15, 20, 15))
             main_frame.pack(fill=tk.BOTH, expand=True)
             
-            # Header section
-            header_frame = ttk.Frame(main_frame, style='TFrame')
+            # Header section with gradient effect
+            header_frame = ttk.Frame(main_frame, style='Header.TFrame')
             header_frame.pack(fill=tk.X, pady=(0, 15))
             
-            header_label = ttk.Label(header_frame, text="Network Monitor", style='Header.TLabel')
-            header_label.pack(side=tk.LEFT)
+            # Create gradient canvas for header background
+            header_canvas = tk.Canvas(header_frame, 
+                                   height=60, 
+                                   bg=COLORS['header_bg'], 
+                                   highlightthickness=0)
+            header_canvas.pack(fill=tk.X)
+            
+            # Add header text
+            header_label = tk.Label(header_canvas, 
+                                  text="Network Monitor", 
+                                  font=('Segoe UI', 24, 'bold'),
+                                  bg=COLORS['header_bg'],
+                                  fg=COLORS['fg'])
+            header_label.place(relx=0.02, rely=0.5, anchor='w')
             
             # Status section with modern styling
-            status_frame = ttk.Frame(main_frame, style='TFrame')
-            status_frame.pack(fill=tk.X, pady=(0, 10))
+            status_frame = ttk.Frame(main_frame, style='Main.TFrame')
+            status_frame.pack(fill=tk.X, pady=(0, 15))
+            
+            # Create a canvas for status background
+            status_canvas = tk.Canvas(status_frame, 
+                                    height=40, 
+                                    bg=COLORS['bg'], 
+                                    highlightthickness=0)
+            status_canvas.pack(fill=tk.X)
+            
+            # Draw rounded rectangle for status background
+            status_canvas.create_rectangle(0, 0, 900, 40, 
+                                         fill=COLORS['header_bg'],
+                                         width=0)
             
             status_var = tk.StringVar(value="Starting services...")
-            status_label = ttk.Label(status_frame, textvariable=status_var, style='Status.TLabel')
-            status_label.pack(side=tk.LEFT)
+            status_label = tk.Label(status_canvas, 
+                                  textvariable=status_var,
+                                  font=('Segoe UI', font_size),
+                                  bg=COLORS['header_bg'],
+                                  fg=COLORS['fg'])
+            status_label.place(relx=0.02, rely=0.5, anchor='w')
             
-            # Server status indicator (colored dot)
+            # Server status indicator (animated dot)
             server_running = tk.BooleanVar(value=False)
-            status_indicator = tk.Canvas(status_frame, width=12, height=12, bg='#f0f0f0', highlightthickness=0)
-            status_indicator.pack(side=tk.LEFT, padx=(10, 0))
+            status_indicator = tk.Canvas(status_canvas, 
+                                      width=12, height=12,
+                                      bg=COLORS['header_bg'],
+                                      highlightthickness=0)
+            status_indicator.place(relx=0.98, rely=0.5, anchor='e')
             
             def update_status_indicator(is_running=None):
-                color = '#2ecc71' if server_running.get() else '#e74c3c'  # Green when running, red when stopped
+                color = COLORS['success'] if server_running.get() else COLORS['error']
                 status_indicator.delete('all')
-                status_indicator.create_oval(2, 2, 10, 10, fill=color, outline='')
+                # Draw glowing dot effect
+                status_indicator.create_oval(2, 2, 10, 10, 
+                                          fill=color,
+                                          outline=color,
+                                          width=2)
             
-            # URL section with copy button
-            url_frame = ttk.Frame(main_frame, style='TFrame')
+            # URL section with modern styling
+            url_frame = ttk.Frame(main_frame, style='Main.TFrame')
             url_frame.pack(fill=tk.X, pady=(0, 15))
             
-            url_var = tk.StringVar(value="http://127.0.0.1:5000/api/docs")
-            url_label = ttk.Label(url_frame, text="Web Interface:", style='Status.TLabel')
+            url_var = tk.StringVar(value="http://localhost:5000")
+            url_label = tk.Label(url_frame, 
+                               text="Web Interface:",
+                               font=('Segoe UI', font_size),
+                               bg=COLORS['bg'],
+                               fg=COLORS['fg'])
             url_label.pack(side=tk.LEFT)
             
-            url_value = ttk.Label(url_frame, textvariable=url_var, style='URL.TLabel', cursor='hand2')
+            url_value = tk.Label(url_frame,
+                               textvariable=url_var,
+                               font=('Segoe UI', font_size, 'underline'),
+                               bg=COLORS['bg'],
+                               fg=COLORS['accent'],
+                               cursor='hand2')
             url_value.pack(side=tk.LEFT, padx=(5, 10))
             url_value.bind('<Button-1>', lambda e: webbrowser.open(url_var.get()))
+            url_value.bind('<Enter>', lambda e: url_value.configure(fg=COLORS['success']))
+            url_value.bind('<Leave>', lambda e: url_value.configure(fg=COLORS['accent']))
             
             def copy_url():
                 console_root.clipboard_clear()
                 console_root.clipboard_append(url_var.get())
-                copy_button.config(text="✓ Copied")
-                console_root.after(2000, lambda: copy_button.config(text="Copy"))
+                copy_button.configure(text="✓ Copied")
+                console_root.after(2000, lambda: copy_button.configure(text="Copy"))
             
-            copy_button = ttk.Button(url_frame, text="Copy", command=copy_url, width=8)
+            copy_button = ttk.Button(url_frame,
+                                   text="Copy",
+                                   command=copy_url,
+                                   style='Custom.TButton',
+                                   width=8)
             copy_button.pack(side=tk.LEFT)
             
             # Log display with improved styling
-            log_frame = ttk.Frame(main_frame, style='TFrame')
+            log_frame = ttk.Frame(main_frame, style='Main.TFrame')
             log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
             
-            log_label = ttk.Label(log_frame, text="Application Log:", style='Status.TLabel')
+            log_label = tk.Label(log_frame,
+                               text="Application Log:",
+                               font=('Segoe UI', font_size),
+                               bg=COLORS['bg'],
+                               fg=COLORS['fg'])
             log_label.pack(anchor=tk.W)
             
+            # Custom scrolled text widget with dark theme
             log_display = scrolledtext.ScrolledText(
                 log_frame,
                 height=15,
-                font=("Consolas", font_size),
-                background='#ffffff',
-                foreground='#333333'
+                font=("Cascadia Code", font_size),
+                bg=COLORS['input_bg'],
+                fg=COLORS['fg'],
+                insertbackground=COLORS['fg'],
+                selectbackground=COLORS['accent'],
+                selectforeground=COLORS['fg'],
+                relief=tk.FLAT,
+                padx=10,
+                pady=10
             )
             log_display.pack(fill=tk.BOTH, expand=True, pady=(5, 0))
             
             # Control buttons frame
-            button_frame = ttk.Frame(main_frame, style='TFrame')
+            button_frame = ttk.Frame(main_frame, style='Main.TFrame')
             button_frame.pack(fill=tk.X, pady=(0, 10))
             
             # Create minimize to tray functionality
@@ -311,6 +411,7 @@ def create_console_window():
                 button_frame,
                 text="Run in Background",
                 command=minimize_to_tray,
+                style='Custom.TButton',
                 width=20
             )
             minimize_button.pack(side=tk.LEFT, padx=(0, 5))
@@ -319,6 +420,7 @@ def create_console_window():
                 button_frame,
                 text="Open in Browser",
                 command=lambda: webbrowser.open(url_var.get()),
+                style='Custom.TButton',
                 state=tk.DISABLED,
                 width=15
             )
@@ -328,6 +430,7 @@ def create_console_window():
                 button_frame,
                 text="Restart Service",
                 command=lambda: restart_server(),
+                style='Custom.TButton',
                 width=15
             )
             restart_button.pack(side=tk.LEFT, padx=5)
@@ -336,6 +439,7 @@ def create_console_window():
                 button_frame,
                 text="Exit",
                 command=lambda: confirm_exit(),
+                style='Custom.TButton',
                 width=10
             )
             exit_button.pack(side=tk.RIGHT)
@@ -348,20 +452,20 @@ def create_console_window():
                 ):
                     os._exit(0)
             
-            # Update function for status display
+            # Update function for status display with color transitions
             def update_status_display(is_running=None, message=None):
                 if is_running is not None:
                     server_running.set(is_running)
                     
                 if server_running.get():
                     status_var.set("Status: Running")
-                    status_label.config(foreground='#2ecc71')  # Green text for running
-                    open_button.config(state=tk.NORMAL)
+                    status_label.configure(fg=COLORS['success'])
+                    open_button.configure(state=tk.NORMAL)
                 else:
                     status_msg = message if message else "Not Running"
                     status_var.set(f"Status: {status_msg}")
-                    status_label.config(foreground='#e74c3c')  # Red text for stopped
-                    open_button.config(state=tk.DISABLED)
+                    status_label.configure(fg=COLORS['error'])
+                    open_button.configure(state=tk.DISABLED)
                 
                 update_status_indicator()
                 console_root.update_idletasks()

@@ -141,3 +141,23 @@
 2025-03-03 23:05:11,031 - INFO - Added DLL directory: C:\Program Files\Npcap
 2025-03-03 23:05:11,050 - INFO - Scapy import successful: Npcap is correctly configured
 2025-03-03 23:05:11,051 - INFO - Npcap initialized successfully: {'installed': True, 'version': None, 'path': 'C:\\Windows\\System32\\Npcap', 'dll_files': ['Packet.dll', 'wpcap.dll'], 'registry': {}}
+2025-03-03 23:22:06,144 - INFO - Initializing Npcap support
+2025-03-03 23:22:06,145 - INFO - Initializing Npcap...
+2025-03-03 23:22:06,145 - INFO - Added to PATH: C:\Windows\System32\Npcap
+2025-03-03 23:22:06,146 - INFO - Added to PATH: C:\Windows\SysWOW64\Npcap
+2025-03-03 23:22:06,146 - INFO - Added to PATH: C:\Program Files\Npcap
+2025-03-03 23:22:06,146 - INFO - Added DLL directory: C:\Windows\System32\Npcap
+2025-03-03 23:22:06,147 - INFO - Added DLL directory: C:\Windows\SysWOW64\Npcap
+2025-03-03 23:22:06,147 - INFO - Added DLL directory: C:\Program Files\Npcap
+2025-03-03 23:22:06,167 - INFO - Scapy import successful: Npcap is correctly configured
+2025-03-03 23:22:06,167 - INFO - Npcap initialized successfully: {'installed': True, 'version': None, 'path': 'C:\\Windows\\System32\\Npcap', 'dll_files': ['Packet.dll', 'wpcap.dll'], 'registry': {}}
+2025-03-03 23:37:06,699 - INFO - Initializing Npcap support
+2025-03-03 23:37:06,701 - INFO - Initializing Npcap...
+2025-03-03 23:37:06,702 - INFO - Added to PATH: C:\Windows\System32\Npcap
+2025-03-03 23:37:06,702 - INFO - Added to PATH: C:\Windows\SysWOW64\Npcap
+2025-03-03 23:37:06,703 - INFO - Added to PATH: C:\Program Files\Npcap
+2025-03-03 23:37:06,703 - INFO - Added DLL directory: C:\Windows\System32\Npcap
+2025-03-03 23:37:06,703 - INFO - Added DLL directory: C:\Windows\SysWOW64\Npcap
+2025-03-03 23:37:06,703 - INFO - Added DLL directory: C:\Program Files\Npcap
+2025-03-03 23:37:06,723 - INFO - Scapy import successful: Npcap is correctly configured
+2025-03-03 23:37:06,724 - INFO - Npcap initialized successfully: {'installed': True, 'version': None, 'path': 'C:\\Windows\\System32\\Npcap', 'dll_files': ['Packet.dll', 'wpcap.dll'], 'registry': {}}

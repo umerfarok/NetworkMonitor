@@ -384,3 +384,180 @@ networkmonitor/
 ├── splash.py          # Splash screen UI
 └── web/              # Web interface files
 ```
+
+## UI Components
+
+### Status Dashboard
+
+The status dashboard is built using Tkinter with a modern, dark theme design. The implementation can be found in `run_app.py` and `launcher.py`. Here are the key technical details:
+
+#### Color Scheme
+The UI uses a consistent color scheme defined as:
+- Background: #1e1e1e (Dark background)
+- Foreground: #e0e0e0 (Light text)
+- Accent: #007acc (Blue accent)
+- Success: #2ecc71 (Green)
+- Error: #e74c3c (Red)
+- Warning: #f1c40f (Yellow)
+- Header Background: #252526
+- Button Background: #333333
+- Button Hover: #404040
+
+#### UI Components Structure
+
+1. Header Section
+   - Professional gradient background effect
+   - Centered title with Segoe UI bold font
+   - Application icon integration
+   - Fixed height with proper padding
+
+2. Status Section
+   - Dynamic status indicator with smooth color transitions
+   - Clear status message display
+   - Color-coded states (running/error/warning)
+   - Background highlighting for better visibility
+
+3. URL Display
+   - Interactive URL label with hover effects
+   - One-click copy functionality
+   - Visual feedback on interactions
+   - Direct browser launch capability
+
+4. Control Panel
+   - Modern flat-design buttons
+   - Consistent button sizing and spacing
+   - Hover effects for better UX
+   - Background operation support
+   - Safe exit handling
+
+#### System Tray Integration
+
+The application now supports system tray operation with:
+- Custom tray icon display
+- Right-click context menu
+- Status preservation while minimized
+- Quick restore functionality
+- Clean application exit
+
+### Implementation Guidelines
+
+1. Window Configuration
+   - Minimum size: 500x300 pixels
+   - Responsive layout adaptation
+   - DPI-aware scaling
+   - Multi-monitor support
+   - Proper window manager hints
+
+2. Font Usage
+   - Primary UI: Segoe UI (Windows system font)
+   - Fallback fonts for cross-platform compatibility
+   - Size scaling based on screen resolution
+   - Consistent font weights
+
+3. Layout Standards
+   - Standard padding: 20px horizontal, 15px vertical
+   - Consistent component spacing
+   - Proper alignment and anchoring
+   - Responsive grid system
+
+4. Event Handling
+   - Non-blocking UI operations
+   - Threaded server management
+   - Periodic status updates
+   - Clean exit procedures
+   - Error handling and recovery
+
+## Development Guidelines
+
+### Adding New UI Elements
+
+1. Follow the color scheme:
+```python
+element = tk.Widget(
+    parent,
+    bg=COLORS['bg'],
+    fg=COLORS['fg'],
+    activebackground=COLORS['button_hover']
+)
+```
+
+2. Use the button creation helper:
+```python
+new_button = create_button(
+    text="Action",
+    command=handler_function,
+    width=15
+)
+```
+
+3. Status Updates:
+```python
+def update_status(state, message):
+    # Update indicator color
+    color = COLORS[state] if state in COLORS else COLORS['warning']
+    status_indicator.update_color(color)
+    # Update message
+    status_var.set(message)
+    # Trigger UI update
+    root.update_idletasks()
+```
+
+### Testing Requirements
+
+1. Visual Testing
+   - Window sizing and minimum constraints
+   - HiDPI display compatibility
+   - Color contrast verification
+   - Animation smoothness
+   - Font rendering quality
+
+2. Functionality Testing
+   - Button interactions
+   - Status updates
+   - URL handling
+   - Copy functionality
+   - System tray operations
+   - Exit handling
+
+3. Performance Testing
+   - UI responsiveness
+   - Memory usage
+   - CPU utilization
+   - Thread management
+   - Resource cleanup
+
+## Build Requirements
+
+Ensure all UI-related dependencies are installed:
+
+```bash
+pip install -r requirements.txt
+```
+
+Critical packages:
+- tkinter (built into Python)
+- pystray>=0.19.0 (system tray support)
+- Pillow>=10.0.0 (image processing)
+
+## Contribution Guidelines
+
+1. UI Changes
+   - Maintain dark theme consistency
+   - Follow existing color scheme
+   - Use proper padding and spacing
+   - Ensure responsive behavior
+   - Add appropriate documentation
+
+2. Code Style
+   - Follow PEP 8 guidelines
+   - Document all UI components
+   - Use type hints where applicable
+   - Include error handling
+   - Write modular, reusable code
+
+3. Pull Requests
+   - Include UI screenshots if applicable
+   - Document visual changes
+   - Test across different resolutions
+   - Verify system tray functionality
+   - Check resource usage
