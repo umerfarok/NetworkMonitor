@@ -51,10 +51,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements-build.txt
+        pip install pytest pytest-cov pytest-xdist  # Install test dependencies
         
     - name: Run tests
       run: |
-        python -m pytest tests/
+        python -m pytest tests/ -v --cov=networkmonitor
 
   build:
     needs: test
