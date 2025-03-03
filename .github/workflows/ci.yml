@@ -20,14 +20,23 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ['3.9', '3.10', '3.11']
+        exclude:
+          - os: macos-latest
+            python-version: '3.9'
+          - os: macos-latest
+            python-version: '3.10'
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+        cache-dependency-path: |
+          requirements.txt
+          requirements-build.txt
     
     - name: Install system dependencies (Linux)
       if: runner.os == 'Linux'
@@ -51,11 +60,21 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements-build.txt
-        pip install pytest pytest-cov pytest-xdist  # Install test dependencies
+        pip install pytest pytest-cov pytest-xdist mock
         
     - name: Run tests
       run: |
-        python -m pytest tests/ -v --cov=networkmonitor
+        python -m pytest tests/ -v --cov=networkmonitor --junitxml=pytest.xml --cov-report=xml
+        
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+        path: |
+          pytest.xml
+          coverage.xml
+        retention-days: 30
 
   build:
     needs: test
@@ -65,25 +84,31 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: |
+          requirements.txt
+          requirements-build.txt
     
     - name: Get version
       id: get_version
+      shell: bash
       run: |
         if [[ $GITHUB_REF == refs/tags/* ]]; then
           VERSION=${GITHUB_REF#refs/tags/v}
         else
-          VERSION=$(python setup.py --version)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          VERSION="0.1.0-alpha.${SHORT_SHA}"
         fi
+        echo "Version will be: $VERSION"
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-      shell: bash
     
     - name: Install system dependencies (Windows)
       if: runner.os == 'Windows'
@@ -98,9 +123,9 @@ jobs:
         pip install -r requirements-build.txt
     
     - name: Build application
-      run: python build.py
       env:
         APP_VERSION: ${{ steps.get_version.outputs.version }}
+      run: python build.py
     
     - name: Package Windows artifacts
       if: runner.os == 'Windows'
@@ -122,12 +147,13 @@ jobs:
         zip -r ${{ env.MACOS_APP_NAME }}-${{ steps.get_version.outputs.version }}.zip NetworkMonitor.app
     
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ runner.os }}-artifacts
         path: |
           dist/*.zip
           dist/*.tar.gz
+          dist/*.dmg
         retention-days: 5
 
   create-release:
@@ -138,39 +164,37 @@ jobs:
       contents: write
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Get version from tag
       id: get_version
       run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
     
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         path: artifacts
+        merge-multiple: true
     
     - name: Display structure of downloaded files
       run: ls -R artifacts/
     
+    - name: Get Changelog Entry
+      id: changelog
+      run: |
+        awk '/^## Version/{p=NR+1}(NR<=p){print}' CHANGELOG.md > release_notes.md
+    
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         name: NetworkMonitor v${{ steps.get_version.outputs.version }}
+        body_path: release_notes.md
         draft: false
         prerelease: false
-        body: |
-          NetworkMonitor v${{ steps.get_version.outputs.version }}
-          
-          ## Download Links
-          - Windows Installer: NetworkMonitor-Windows-Setup-${{ steps.get_version.outputs.version }}.zip
-          - Windows Portable: NetworkMonitor-Windows-${{ steps.get_version.outputs.version }}.zip
-          - Linux: NetworkMonitor-Linux-${{ steps.get_version.outputs.version }}.tar.gz
-          - macOS: NetworkMonitor-macOS-${{ steps.get_version.outputs.version }}.zip
-          
-          See CHANGELOG.md for detailed changes.
         files: |
           artifacts/**/*.zip
           artifacts/**/*.tar.gz
+          artifacts/**/*.dmg
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -187,42 +211,44 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+        cache: 'pip'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install mkdocs mkdocs-material
+        pip install mkdocs mkdocs-material jq
     
     - name: Setup Pages
-      uses: actions/configure-pages@v3
+      uses: actions/configure-pages@v4
     
     - name: Build documentation
       run: |
-        mkdir -p docs/downloads
+        mkdir -p docs/guide docs/downloads
         cp README.md docs/index.md
         cp DEVELOPER.md docs/guide/developer.md
         
-        # Create downloads page
+        VERSION="${GITHUB_REF#refs/tags/v}"
+        
         cat > docs/downloads/index.md << EOL
         # Downloads
         
-        ## Latest Release (v${{ github.ref_name }})
+        ## Latest Release (v${VERSION})
         
         ### Windows
-        - [NetworkMonitor Setup (Installer)](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-Setup-${{ github.ref_name }}.zip)
-        - [NetworkMonitor Portable](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-${{ github.ref_name }}.zip)
+        - [NetworkMonitor Setup (Installer)](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-Setup-${VERSION}.zip)
+        - [NetworkMonitor Portable](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-${VERSION}.zip)
         
         ### Linux
-        - [NetworkMonitor for Linux](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Linux-${{ github.ref_name }}.tar.gz)
+        - [NetworkMonitor for Linux](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Linux-${VERSION}.tar.gz)
         
         ### macOS
-        - [NetworkMonitor for macOS](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-macOS-${{ github.ref_name }}.zip)
+        - [NetworkMonitor for macOS](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-macOS-${VERSION}.zip)
         
         ## System Requirements
         
@@ -231,38 +257,63 @@ jobs:
         - [Npcap](https://npcap.com) installed in WinPcap compatibility mode
         
         ### Linux
-        - Modern Linux distribution
-        - libpcap installed
+        - Modern Linux distribution (Ubuntu 20.04+, Debian 11+, etc.)
+        - libpcap installed (\`sudo apt install libpcap-dev\` or equivalent)
+        - Root/sudo privileges for packet capture
         
         ### macOS
-        - macOS 10.15 or later
-        - libpcap installed (via Homebrew)
+        - macOS 10.15 (Catalina) or later
+        - libpcap installed (pre-installed or via \`brew install libpcap\`)
+        - Root privileges for packet capture
         EOL
         
-        # Create mkdocs config
         cat > mkdocs.yml << EOL
         site_name: NetworkMonitor
         site_description: Network monitoring and analysis tool
+        repo_url: https://github.com/${{ github.repository }}
+        edit_uri: edit/main/docs/
+        
         theme:
           name: material
           palette:
             scheme: slate
             primary: blue
             accent: light blue
+          features:
+            - navigation.instant
+            - navigation.tracking
+            - navigation.sections
+            - navigation.expand
+            - navigation.top
+            - toc.follow
+            - search.suggest
+            - search.highlight
+        
         nav:
           - Home: index.md
           - Downloads: downloads/index.md
           - Documentation:
             - Developer Guide: guide/developer.md
+        
+        markdown_extensions:
+          - pymdownx.highlight:
+              anchor_linenums: true
+          - pymdownx.inlinehilite
+          - pymdownx.snippets
+          - pymdownx.superfences
+          - admonition
+          - footnotes
+          - attr_list
+          - md_in_html
         EOL
         
         mkdocs build
     
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v2
+      uses: actions/upload-pages-artifact@v4
       with:
         path: site
     
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v2
+      uses: actions/deploy-pages@v4

@@ -7,13 +7,11 @@ on:
     types: [published]
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -22,60 +20,128 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
+      - uses: actions/checkout@v4
+      
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+          
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mkdocs mkdocs-material
-
+          pip install mkdocs mkdocs-material jq
+          
       - name: Setup Pages
-        uses: actions/configure-pages@v3
-
+        uses: actions/configure-pages@v4
+        
       - name: Build documentation
         run: |
-          mkdir docs
+          mkdir -p docs/downloads
           cp README.md docs/index.md
-          cp DEVELOPER.md docs/developer-guide.md
+          cp DEVELOPER.md docs/guide/developer.md
           
           # Create downloads page with version info
-          echo "# Downloads" > docs/downloads.md
-          echo "" >> docs/downloads.md
-          echo "## Latest Release" >> docs/downloads.md
-          echo "" >> docs/downloads.md
+          cat > docs/downloads/index.md << 'EOL'
+          # Downloads
           
-          # Get latest release info
-          LATEST_RELEASE=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest)
-          VERSION=$(echo $LATEST_RELEASE | jq -r .tag_name)
-          DATE=$(echo $LATEST_RELEASE | jq -r .published_at | cut -d'T' -f1)
+          ## Latest Release
+          EOL
           
-          echo "Version: $VERSION (Released: $DATE)" >> docs/downloads.md
-          echo "" >> docs/downloads.md
-          echo "### Download Links" >> docs/downloads.md
-          echo "- [Windows Installer](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows.zip)" >> docs/downloads.md
-          echo "- [Linux Binary](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Linux.tar.gz)" >> docs/downloads.md
-          echo "- [macOS App](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-macOS.zip)" >> docs/downloads.md
+          # Get latest release info using GitHub API
+          if [ -n "${{ github.event.release.tag_name }}" ]; then
+            # Use the current release info if this is a release event
+            VERSION="${{ github.event.release.tag_name }}"
+            DATE=$(date -d "${{ github.event.release.published_at }}" +%Y-%m-%d)
+          else
+            # Otherwise fetch latest release info
+            LATEST_RELEASE=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+            VERSION=$(echo "$LATEST_RELEASE" | jq -r .tag_name)
+            DATE=$(echo "$LATEST_RELEASE" | jq -r .published_at | cut -d'T' -f1)
+          fi
+          
+          cat >> docs/downloads/index.md << EOL
+          
+          Version: ${VERSION} (Released: ${DATE})
+          
+          ### Download Links
+          
+          #### Windows
+          - [NetworkMonitor Setup (Installer)](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-Setup-${VERSION#v}.zip)
+          - [NetworkMonitor Portable](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-${VERSION#v}.zip)
+          
+          #### Linux
+          - [NetworkMonitor for Linux](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Linux-${VERSION#v}.tar.gz)
+          
+          #### macOS
+          - [NetworkMonitor for macOS](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-macOS-${VERSION#v}.zip)
+          
+          ## System Requirements
+          
+          ### Windows
+          - Windows 10 or later (64-bit)
+          - [Npcap](https://npcap.com) installed in WinPcap compatibility mode
+          
+          ### Linux
+          - Modern Linux distribution (Ubuntu 20.04+, Debian 11+, etc.)
+          - libpcap installed (\`sudo apt install libpcap-dev\` or equivalent)
+          - Root/sudo privileges for packet capture
+          
+          ### macOS
+          - macOS 10.15 (Catalina) or later
+          - libpcap installed (pre-installed or via \`brew install libpcap\`)
+          - Root privileges for packet capture
+          EOL
           
           # Create mkdocs config
-          echo "site_name: NetworkMonitor Documentation" > mkdocs.yml
-          echo "theme: material" >> mkdocs.yml
-          echo "nav:" >> mkdocs.yml
-          echo "  - Home: index.md" >> mkdocs.yml
-          echo "  - Downloads: downloads.md" >> mkdocs.yml
-          echo "  - Developer Guide: developer-guide.md" >> mkdocs.yml
+          cat > mkdocs.yml << EOL
+          site_name: NetworkMonitor
+          site_description: Network monitoring and analysis tool
+          repo_url: https://github.com/${{ github.repository }}
+          edit_uri: edit/main/docs/
+          
+          theme:
+            name: material
+            palette:
+              scheme: slate
+              primary: blue
+              accent: light blue
+            features:
+              - navigation.instant
+              - navigation.tracking
+              - navigation.sections
+              - navigation.expand
+              - navigation.top
+              - toc.follow
+              - search.suggest
+              - search.highlight
+          
+          nav:
+            - Home: index.md
+            - Downloads: downloads/index.md
+            - Documentation:
+              - Developer Guide: guide/developer.md
+          
+          markdown_extensions:
+            - pymdownx.highlight:
+                anchor_linenums: true
+            - pymdownx.inlinehilite
+            - pymdownx.snippets
+            - pymdownx.superfences
+            - admonition
+            - footnotes
+            - attr_list
+            - md_in_html
+          EOL
           
           mkdocs build
-
+          
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v4
         with:
-          path: 'site'
-
+          path: site
+          
   deploy:
     environment:
       name: github-pages
@@ -85,4 +151,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
