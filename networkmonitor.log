@@ -131,3 +131,13 @@
 2025-03-03 22:21:06,077 - INFO - Added DLL directory: C:\Program Files\Npcap
 2025-03-03 22:21:06,097 - INFO - Scapy import successful: Npcap is correctly configured
 2025-03-03 22:21:06,097 - INFO - Npcap initialized successfully: {'installed': True, 'version': None, 'path': 'C:\\Windows\\System32\\Npcap', 'dll_files': ['Packet.dll', 'wpcap.dll'], 'registry': {}}
+2025-03-03 23:05:11,028 - INFO - Initializing Npcap support
+2025-03-03 23:05:11,029 - INFO - Initializing Npcap...
+2025-03-03 23:05:11,029 - INFO - Added to PATH: C:\Windows\System32\Npcap
+2025-03-03 23:05:11,030 - INFO - Added to PATH: C:\Windows\SysWOW64\Npcap
+2025-03-03 23:05:11,030 - INFO - Added to PATH: C:\Program Files\Npcap
+2025-03-03 23:05:11,030 - INFO - Added DLL directory: C:\Windows\System32\Npcap
+2025-03-03 23:05:11,031 - INFO - Added DLL directory: C:\Windows\SysWOW64\Npcap
+2025-03-03 23:05:11,031 - INFO - Added DLL directory: C:\Program Files\Npcap
+2025-03-03 23:05:11,050 - INFO - Scapy import successful: Npcap is correctly configured
+2025-03-03 23:05:11,051 - INFO - Npcap initialized successfully: {'installed': True, 'version': None, 'path': 'C:\\Windows\\System32\\Npcap', 'dll_files': ['Packet.dll', 'wpcap.dll'], 'registry': {}}

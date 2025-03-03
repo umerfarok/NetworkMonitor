@@ -157,11 +157,12 @@ def open_browser(url):
         return False
 
 def create_console_window():
-    """Create a simple console window to display logs and status"""
+    """Create a modern, user-friendly console window to display logs and status"""
     if platform.system() == "Windows":
         try:
-            from tkinter import scrolledtext
+            from tkinter import scrolledtext, ttk
             import threading
+            import webbrowser
             
             # Configure font sizes based on screen resolution
             try:
@@ -173,11 +174,19 @@ def create_console_window():
             except:
                 font_size = 9
                 button_font_size = 9
-                
+            
+            # Create and style the main window
             console_root = tk.Tk()
-            console_root.title("Network Monitor")
-            console_root.geometry("800x400")
-            console_root.minsize(640, 300)
+            console_root.title("Network Monitor Dashboard")
+            console_root.geometry("900x600")
+            console_root.minsize(800, 500)
+            
+            # Configure the window style
+            style = ttk.Style()
+            style.configure('TFrame', background='#f0f0f0')
+            style.configure('Header.TLabel', font=('Arial', 16, 'bold'), background='#f0f0f0')
+            style.configure('Status.TLabel', font=('Arial', font_size), background='#f0f0f0')
+            style.configure('URL.TLabel', font=('Arial', font_size, 'underline'), foreground='blue', background='#f0f0f0')
             
             # Set window icon if available
             try:
@@ -192,78 +201,170 @@ def create_console_window():
             except Exception as e:
                 logger.debug(f"Could not set window icon: {e}")
             
-            # Prevent closing with X button (use Exit button instead)
-            console_root.protocol("WM_DELETE_WINDOW", lambda: None)
+            # Create main container with padding
+            main_frame = ttk.Frame(console_root, padding=(20, 10, 20, 10), style='TFrame')
+            main_frame.pack(fill=tk.BOTH, expand=True)
             
-            # Main content frame
-            main_frame = tk.Frame(console_root)
-            main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+            # Header section
+            header_frame = ttk.Frame(main_frame, style='TFrame')
+            header_frame.pack(fill=tk.X, pady=(0, 15))
             
-            # Status frame (top)
-            status_frame = tk.Frame(main_frame)
-            status_frame.pack(fill=tk.X, pady=(0, 5))
+            header_label = ttk.Label(header_frame, text="Network Monitor", style='Header.TLabel')
+            header_label.pack(side=tk.LEFT)
             
-            status_label = tk.Label(status_frame, text="Status: Starting...", font=("Arial", font_size))
-            status_label.pack(side=tk.LEFT, padx=5)
+            # Status section with modern styling
+            status_frame = ttk.Frame(main_frame, style='TFrame')
+            status_frame.pack(fill=tk.X, pady=(0, 10))
             
-            # Create a variable to track server status
+            status_var = tk.StringVar(value="Starting services...")
+            status_label = ttk.Label(status_frame, textvariable=status_var, style='Status.TLabel')
+            status_label.pack(side=tk.LEFT)
+            
+            # Server status indicator (colored dot)
             server_running = tk.BooleanVar(value=False)
+            status_indicator = tk.Canvas(status_frame, width=12, height=12, bg='#f0f0f0', highlightthickness=0)
+            status_indicator.pack(side=tk.LEFT, padx=(10, 0))
             
-            # Function to update status display
+            def update_status_indicator(is_running=None):
+                color = '#2ecc71' if server_running.get() else '#e74c3c'  # Green when running, red when stopped
+                status_indicator.delete('all')
+                status_indicator.create_oval(2, 2, 10, 10, fill=color, outline='')
+            
+            # URL section with copy button
+            url_frame = ttk.Frame(main_frame, style='TFrame')
+            url_frame.pack(fill=tk.X, pady=(0, 15))
+            
+            url_var = tk.StringVar(value="http://127.0.0.1:5000/api/docs")
+            url_label = ttk.Label(url_frame, text="Web Interface:", style='Status.TLabel')
+            url_label.pack(side=tk.LEFT)
+            
+            url_value = ttk.Label(url_frame, textvariable=url_var, style='URL.TLabel', cursor='hand2')
+            url_value.pack(side=tk.LEFT, padx=(5, 10))
+            url_value.bind('<Button-1>', lambda e: webbrowser.open(url_var.get()))
+            
+            def copy_url():
+                console_root.clipboard_clear()
+                console_root.clipboard_append(url_var.get())
+                copy_button.config(text="✓ Copied")
+                console_root.after(2000, lambda: copy_button.config(text="Copy"))
+            
+            copy_button = ttk.Button(url_frame, text="Copy", command=copy_url, width=8)
+            copy_button.pack(side=tk.LEFT)
+            
+            # Log display with improved styling
+            log_frame = ttk.Frame(main_frame, style='TFrame')
+            log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+            
+            log_label = ttk.Label(log_frame, text="Application Log:", style='Status.TLabel')
+            log_label.pack(anchor=tk.W)
+            
+            log_display = scrolledtext.ScrolledText(
+                log_frame,
+                height=15,
+                font=("Consolas", font_size),
+                background='#ffffff',
+                foreground='#333333'
+            )
+            log_display.pack(fill=tk.BOTH, expand=True, pady=(5, 0))
+            
+            # Control buttons frame
+            button_frame = ttk.Frame(main_frame, style='TFrame')
+            button_frame.pack(fill=tk.X, pady=(0, 10))
+            
+            # Create minimize to tray functionality
+            def minimize_to_tray():
+                console_root.withdraw()  # Hide the window
+                # Create system tray icon
+                try:
+                    import pystray
+                    from PIL import Image
+                    
+                    def show_window(icon, item):
+                        icon.stop()
+                        console_root.after(0, console_root.deiconify)
+                    
+                    def exit_app(icon, item):
+                        icon.stop()
+                        console_root.after(0, lambda: os._exit(0))
+                    
+                    # Create tray icon menu
+                    menu = pystray.Menu(
+                        pystray.MenuItem("Show Dashboard", show_window),
+                        pystray.MenuItem("Exit", exit_app)
+                    )
+                    
+                    # Create and run tray icon
+                    icon_path = os.path.join(base_path, "assets", "icon.ico")
+                    if os.path.exists(icon_path):
+                        icon_image = Image.open(icon_path)
+                    else:
+                        # Create a default icon if the icon file is not found
+                        icon_image = Image.new('RGB', (64, 64), color='#1e88e5')
+                    
+                    icon = pystray.Icon("NetworkMonitor", icon_image, "Network Monitor", menu)
+                    icon.run()
+                except ImportError:
+                    logger.warning("pystray not installed, minimizing to taskbar instead")
+                    console_root.iconify()
+            
+            minimize_button = ttk.Button(
+                button_frame,
+                text="Run in Background",
+                command=minimize_to_tray,
+                width=20
+            )
+            minimize_button.pack(side=tk.LEFT, padx=(0, 5))
+            
+            open_button = ttk.Button(
+                button_frame,
+                text="Open in Browser",
+                command=lambda: webbrowser.open(url_var.get()),
+                state=tk.DISABLED,
+                width=15
+            )
+            open_button.pack(side=tk.LEFT, padx=5)
+            
+            restart_button = ttk.Button(
+                button_frame,
+                text="Restart Service",
+                command=lambda: restart_server(),
+                width=15
+            )
+            restart_button.pack(side=tk.LEFT, padx=5)
+            
+            exit_button = ttk.Button(
+                button_frame,
+                text="Exit",
+                command=lambda: confirm_exit(),
+                width=10
+            )
+            exit_button.pack(side=tk.RIGHT)
+            
+            # Add exit confirmation dialog
+            def confirm_exit():
+                if tk.messagebox.askokcancel(
+                    "Exit Network Monitor",
+                    "Are you sure you want to exit Network Monitor?\nThis will stop the monitoring service."
+                ):
+                    os._exit(0)
+            
+            # Update function for status display
             def update_status_display(is_running=None, message=None):
                 if is_running is not None:
                     server_running.set(is_running)
                     
                 if server_running.get():
-                    status_label.config(text="Status: Running", fg="green")
+                    status_var.set("Status: Running")
+                    status_label.config(foreground='#2ecc71')  # Green text for running
                     open_button.config(state=tk.NORMAL)
                 else:
                     status_msg = message if message else "Not Running"
-                    status_label.config(text=f"Status: {status_msg}", fg="red")
+                    status_var.set(f"Status: {status_msg}")
+                    status_label.config(foreground='#e74c3c')  # Red text for stopped
                     open_button.config(state=tk.DISABLED)
-                    
+                
+                update_status_indicator()
                 console_root.update_idletasks()
-            
-            # URL display
-            url_frame = tk.Frame(main_frame)
-            url_frame.pack(fill=tk.X, pady=5)
-            
-            url_label = tk.Label(url_frame, text="Web Interface:", font=("Arial", font_size))
-            url_label.pack(side=tk.LEFT, padx=5)
-            
-            url_var = tk.StringVar(value="http://localhost:5000")
-            url_entry = tk.Entry(url_frame, textvariable=url_var, width=40, font=("Arial", font_size))
-            url_entry.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-            
-            # Create text area for logs
-            log_frame = tk.Frame(main_frame)
-            log_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-            
-            log_label = tk.Label(log_frame, text="Application Log:", font=("Arial", font_size))
-            log_label.pack(anchor=tk.W, padx=5)
-            
-            log_display = scrolledtext.ScrolledText(log_frame, height=15, font=("Consolas", font_size))
-            log_display.pack(fill=tk.BOTH, expand=True, padx=5, pady=(0, 5))
-            log_display.insert(tk.END, f"Network Monitor started\nLogs available at: {log_file}\n\n")
-            
-            # Button frame (bottom)
-            button_frame = tk.Frame(main_frame)
-            button_frame.pack(fill=tk.X, pady=(5, 10))
-            
-            open_button = tk.Button(button_frame, text="Open in Browser", 
-                                   command=lambda: webbrowser.open(url_var.get()),
-                                   state=tk.DISABLED, font=("Arial", button_font_size))
-            open_button.pack(side=tk.LEFT, padx=5)
-            
-            restart_button = tk.Button(button_frame, text="Restart Service", 
-                                    command=lambda: restart_server(),
-                                    font=("Arial", button_font_size))
-            restart_button.pack(side=tk.LEFT, padx=5)
-            
-            exit_button = tk.Button(button_frame, text="Exit", 
-                                   command=lambda: os._exit(0),
-                                   font=("Arial", button_font_size))
-            exit_button.pack(side=tk.RIGHT, padx=5)
             
             # Server controller reference
             server_controller = {"instance": None, "url": None, "thread": None}
@@ -371,8 +472,11 @@ def create_console_window():
             # Set up periodic log updates
             update_logs()
             
-            # Start server automatically
+            # Start server automatically after a short delay
             console_root.after(1000, restart_server)
+            
+            # Handle window close with confirmation
+            console_root.protocol("WM_DELETE_WINDOW", confirm_exit)
             
             return console_root
         except Exception as e:
