@@ -7,7 +7,7 @@ import sys
 import shutil
 import platform
 from pathlib import Path
-from typing import Dict, List, Tuple
+import subprocess
 
 def clean_build():
     """Clean previous build artifacts"""
@@ -24,92 +24,68 @@ def check_environment() -> bool:
     if sys.version_info >= (3, 12):
         print("Warning: Python 3.12+ might have compatibility issues. Using 3.9-3.11 is recommended.")
     
-    required_modules = ['PyInstaller', 'Flask', 'click', 'scapy']
-    missing_modules = []
-    
-    for module in required_modules:
-        try:
-            __import__(module)
-        except ImportError:
-            missing_modules.append(module)
-            
-    if missing_modules:
-        print("Missing required modules:")
-        for module in missing_modules:
-            print(f"  - {module}")
+    try:
+        import PyInstaller
+        return True
+    except ImportError:
+        print("\nPyInstaller not found. Please install build requirements:")
+        print("pip install -r requirements-build.txt")
         return False
-        
-    return True
 
-def get_platform_settings() -> Tuple[str, Dict]:
+def get_platform_settings():
     """Get platform-specific build settings"""
     system = platform.system().lower()
     
     # Base settings common to all platforms
-    base_settings = {
+    settings = {
         'name': 'NetworkMonitor',
         'console': True,
         'debug': False,
         'noconfirm': True,
-        'strip': True,
-        'clean': True
+        'clean': True,
+        'icon_path': None,
+        'hiddenimports': []
     }
     
     # Platform-specific settings
     if system == 'windows':
-        icon_file = 'assets/icon.ico'
-        base_settings.update({
+        settings.update({
+            'icon_path': 'assets/icon.ico',
             'uac_admin': True,
-            'win_private_assemblies': True,
-            'win_no_prefer_redirects': True,
             'hiddenimports': ['win32com', 'win32com.shell', 'win32api', 'wmi']
         })
     elif system == 'darwin':
-        icon_file = 'assets/icon.icns'
-        base_settings['hiddenimports'] = ['pkg_resources.py2_warn']
-    else:  # Linux
-        icon_file = 'assets/icon.ico'  # Use .ico for Linux as well
-        base_settings['hiddenimports'] = ['pkg_resources.py2_warn']
+        settings['icon_path'] = 'assets/icon.icns'
+    elif system == 'linux':
+        settings['icon_path'] = 'assets/icon.ico'
     
-    return icon_file, base_settings
+    return settings
 
-def create_spec_file() -> bool:
+def create_spec_file(settings) -> bool:
     """Create PyInstaller spec file based on platform"""
     try:
-        # Get platform-specific settings
-        icon_file, settings = get_platform_settings()
-        
-        if not os.path.exists(icon_file):
-            print(f"Warning: Icon file not found at {icon_file}")
-            icon_file = None
-        
         # Convert settings to spec file content
-        spec_content = """# -*- mode: python ; coding: utf-8 -*-
+        spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.building.api import PYZ, EXE, COLLECT
-from PyInstaller.building.build_main import Analysis
-
-datas = [
-    ('assets/*', 'assets'),
-    ('networkmonitor/web/build/*', 'web/build')
-]
+block_cipher = None
 
 a = Analysis(
     ['networkmonitor/scripts/networkmonitor_cli.py'],
     pathex=[],
     binaries=[],
-    datas=datas,
-    hiddenimports={hiddenimports},
+    datas=[
+        ('assets/*', 'assets')
+    ],
+    hiddenimports={settings['hiddenimports']},
     hookspath=[],
     hooksconfig={{}},
     runtime_hooks=[],
     excludes=[],
-    win_no_prefer_redirects={win_no_prefer_redirects},
-    win_private_assemblies={win_private_assemblies},
-    noarchive=False,
+    cipher=block_cipher,
+    noarchive=False
 )
 
-pyz = PYZ(a.pure, a.zipped_data)
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
     pyz,
@@ -118,29 +94,21 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='{name}',
-    debug={debug},
-    strip={strip},
-    upx=True,
+    name='NetworkMonitor',
+    debug=False,
+    bootloader_ignore_signals=False,
+    upx=False,
     runtime_tmpdir=None,
-    console={console},
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
-    entitlements_file=None,""".format(
-            name=settings['name'],
-            hiddenimports=settings.get('hiddenimports', []),
-            win_no_prefer_redirects=settings.get('win_no_prefer_redirects', False),
-            win_private_assemblies=settings.get('win_private_assemblies', False),
-            debug=settings['debug'],
-            strip=settings['strip'],
-            console=settings['console']
-        )
-        
+    entitlements_file=None"""
+            
         # Add icon if available
-        if icon_file:
-            spec_content += f"\n    icon=['{icon_file}'],"
+        if settings.get('icon_path'):
+            spec_content += f",\n    icon=['{settings['icon_path']}']"
             
         spec_content += "\n)"
         
@@ -148,7 +116,7 @@ exe = EXE(
         with open('NetworkMonitor.spec', 'w', encoding='utf-8') as f:
             f.write(spec_content)
             
-        print("Generated NetworkMonitor.spec file\n")
+        print("Generated NetworkMonitor.spec file with platform-specific settings\n")
         return True
         
     except Exception as e:
@@ -158,26 +126,34 @@ exe = EXE(
 def build_executable() -> bool:
     """Build the executable using PyInstaller"""
     try:
-        import PyInstaller.__main__
-        
         # Clean previous build
         clean_build()
         
+        # Get platform-specific settings
+        settings = get_platform_settings()
+        
         # Create spec file
-        if not create_spec_file():
+        if not create_spec_file(settings):
             return False
-            
-        # Build with optimized settings
+        
         print("Building executable with optimized settings...")
-        PyInstaller.__main__.run([
+        pyinstaller_args = [
+            sys.executable,
+            '-m',
+            'PyInstaller',
             'NetworkMonitor.spec',
-            '--noconfirm',
-            '--clean',
-            '--strip'
-        ])
+            '--noconfirm'
+        ]
+
+        result = subprocess.run(pyinstaller_args, check=True)
+        return result.returncode == 0
         
-        return True
-        
+    except subprocess.CalledProcessError as e:
+        print(f"PyInstaller build failed with return code {e.returncode}")
+        if hasattr(e, 'stderr') and e.stderr:
+            print("Error output:")
+            print(e.stderr.decode() if isinstance(e.stderr, bytes) else e.stderr)
+        return False
     except Exception as e:
         print(f"Error during build: {e}")
         print("\nTroubleshooting tips:")
@@ -189,6 +165,7 @@ def build_executable() -> bool:
 
 if __name__ == '__main__':
     try:
+        print("Building NetworkMonitor executable...")
         if not check_environment():
             sys.exit(1)
             

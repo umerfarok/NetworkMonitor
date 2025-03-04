@@ -51,9 +51,9 @@ jobs:
     
     - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-build.txt
+        python -m pip install --upgrade pip setuptools wheel
+        pip install -r requirements.txt --no-cache-dir
+        pip install -r requirements-build.txt --no-cache-dir
         pip install pytest pytest-cov pytest-xdist mock
         
     - name: Run tests
@@ -172,15 +172,41 @@ jobs:
         mv icon.icns assets/icon.icns
     
     - name: Install Python dependencies
+      shell: bash
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-build.txt
-    
+        python -m pip install --upgrade pip setuptools wheel
+        
+        # Install core dependencies separately first to ensure they're available
+        pip install flask==2.0.0 flask-cors==3.0.0 click==8.0.0 scapy==2.5.0 --no-cache-dir
+        
+        # Install build requirements
+        pip install -r requirements-build.txt --no-cache-dir || {
+          echo "Some build requirements failed but continuing..."
+          # List what was actually installed
+          pip list
+        }
+        
+        # Install main requirements
+        pip install -r requirements.txt --no-cache-dir || {
+          echo "Some requirements failed but continuing..."
+          # List what was actually installed
+          pip list
+        }
+        
+        # Verify critical packages are installed
+        python -c "import flask; import click; import scapy; print('Core dependencies verified')" || exit 1
+        
     - name: Build application
       env:
         APP_VERSION: ${{ steps.get_version.outputs.version }}
-      run: python build.py
+      run: |
+        # Verify Python environment before build
+        python --version
+        which python
+        pip list
+        
+        # Run build with more verbosity for debugging
+        python -v build.py
     
     - name: Package Windows artifacts
       if: runner.os == 'Windows'

@@ -1,9 +1,14 @@
+# Core dependencies - install these first
+flask>=2.0.0
+flask-cors>=3.0.0
+click>=8.0.0
+scapy>=2.5.0
+
 # Build dependencies
 pyinstaller>=5.13.0
 wheel>=0.40.0
 setuptools>=68.0.0
-flask>=2.0.0
-flask-cors>=3.0.0
+
 # Test dependencies
 pytest>=7.0.0
 pytest-cov>=4.0.0
@@ -13,7 +18,7 @@ mock>=5.0.0
 # Platform-specific dependencies
 pynsist>=2.6.0; sys_platform == 'win32'
 
-# Other dependencies
+# Documentation and UI dependencies
 cairosvg>=2.5.0
 Pillow>=10.0.0
 mkdocs>=1.4.0
