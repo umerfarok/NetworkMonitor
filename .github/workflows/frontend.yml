@@ -30,14 +30,31 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
+    - name: Run tests
+      run: npm test
       
   deploy:
     needs: test
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     
     steps:
-    - name: Deploy to Vercel
-      run: |
-        echo "Frontend deployment is handled by Vercel's GitHub integration"
-        echo "Ensure Vercel GitHub integration is enabled and points to networkmonitor/web directory"
+    - uses: actions/checkout@v4
+    
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+    
+    - name: Pull Vercel Environment Information
+      working-directory: networkmonitor/web
+      run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+    
+    - name: Build Project Artifacts
+      working-directory: networkmonitor/web
+      run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+    
+    - name: Deploy Project Artifacts to Vercel
+      working-directory: networkmonitor/web
+      run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

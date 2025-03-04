@@ -34,20 +34,43 @@ def create_spec_file():
     is_windows = platform.system() == "Windows"
     is_macos = platform.system() == "Darwin"
     
+    # Get absolute paths
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    assets_dir = os.path.join(root_dir, 'assets')
+    
     # Common options for all platforms - removed web/build from datas
     datas = [
-        ('assets', 'assets')
+        (os.path.join(root_dir, 'assets'), 'assets')
     ]
     
-    icon_path = 'assets/icon.ico' if is_windows else 'assets/icon.icns' if is_macos else None
+    # Use absolute paths for icons
+    icon_path = None
+    if is_windows:
+        icon_file = os.path.join(assets_dir, 'icon.ico')
+        if os.path.exists(icon_file):
+            icon_path = icon_file
+    elif is_macos:
+        icon_file = os.path.join(assets_dir, 'icon.icns')
+        if os.path.exists(icon_file):
+            icon_path = icon_file
+    
+    if icon_path:
+        print(f"Using icon from: {icon_path}")
+    else:
+        print("Warning: No platform-specific icon found")
     
     spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
+import os
 
 block_cipher = None
 
+# Get absolute paths
+root_dir = os.path.dirname(os.path.abspath(SPECPATH))
+assets_dir = os.path.join(root_dir, 'assets')
+
 a = Analysis(
-    ['networkmonitor/cli.py'],
-    pathex=[],
+    [os.path.join(root_dir, 'networkmonitor', 'cli.py')],
+    pathex=[root_dir],
     binaries=[],
     datas={datas},
     hiddenimports=['scapy.layers.all', 'engineio.async_drivers.threading'],
@@ -78,7 +101,7 @@ exe = EXE(
 
     if icon_path:
         spec_content += f"""
-    icon=['{icon_path}'],"""
+    icon=[r'{icon_path}'],"""
 
     if is_macos:
         spec_content += """
@@ -125,7 +148,7 @@ exe = EXE(
 app = BUNDLE(
     exe,
     name='NetworkMonitor.app',
-    icon='assets/icon.icns',
+    icon=os.path.join(assets_dir, 'icon.icns'),
     bundle_identifier='com.networkmonitor.app',
     info_plist={
         'CFBundleShortVersionString': '1.0.0',
