@@ -159,9 +159,6 @@ jobs:
       run: |
         brew install imagemagick
         
-        # Create iconset directory
-        mkdir icon.iconset
-        
         # Convert SVG to PNG in different sizes
         convert -background none -resize 16x16 assets/icon.svg icon.iconset/icon_16x16.png
         convert -background none -resize 32x32 assets/icon.svg icon.iconset/icon_16x16@2x.png
