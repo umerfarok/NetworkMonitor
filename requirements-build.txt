@@ -10,7 +10,7 @@ pytest-xdist>=3.0.0
 mock>=5.0.0
 
 # Platform-specific dependencies
-pynsis>=2.6.0; sys_platform == 'win32'
+pynsis; sys_platform == 'win32'
 
 # Other dependencies
 cairosvg>=2.5.0
