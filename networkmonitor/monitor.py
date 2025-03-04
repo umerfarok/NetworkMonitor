@@ -401,7 +401,7 @@ class NetworkController:
         """Scan network for connected devices"""
         try:
             if not interface:
-                interface = self.get_default_interface()
+                interface = self.get_default_interface() 
             
             if not interface:
                 raise Exception("No valid network interface found")

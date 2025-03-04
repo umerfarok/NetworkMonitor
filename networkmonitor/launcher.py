@@ -506,7 +506,7 @@ def create_console_window():
                         if len(url_parts) > 0:
                             host_part = url_parts[0]
                             if host_part:
-                                host = host_part
+                                host = host_part 
                         if len(url_parts) > 1:
                             port_part = url_parts[1].split("/")[0]
                             if port_part.isdigit():

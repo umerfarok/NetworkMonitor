@@ -20,7 +20,6 @@ class DependencyChecker:
         if platform.system() == "Windows":
             self.checks.append(("Npcap", self._check_npcap))
         
-        self.checks.append(("Python Packages", self._check_pip_packages))
     
     def check_all_dependencies(self):
         """
@@ -71,29 +70,6 @@ class DependencyChecker:
                 
         return False, "Npcap is not installed. Please download and install from https://npcap.com"
     
-    def _check_pip_packages(self):
-        """Check if required pip packages are installed"""
-        try:
-            with open(os.path.join(os.path.dirname(__file__), '..', 'requirements.txt'), 'r') as f:
-                required = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-            
-            # Filter platform-specific requirements
-            if platform.system() == "Windows":
-                required = [req for req in required if "sys_platform == 'linux'" not in req]
-            else:
-                required = [req for req in required if "sys_platform == 'win32'" not in req]
-                
-            # Clean up conditional markers
-            required = [req.split(';')[0].strip() for req in required]
-            
-            pkg_resources.require(required)
-            return True, None
-        except pkg_resources.DistributionNotFound as e:
-            return False, f"Missing Python package: {e.req}"
-        except pkg_resources.VersionConflict as e:
-            return False, f"Version conflict: {e.req}"
-        except Exception as e:
-            return False, f"Error checking Python packages: {str(e)}"
     
     def get_installation_instructions(self):
         """Get detailed installation instructions for missing dependencies"""
@@ -125,9 +101,6 @@ def check_npcap():
     """Check if Npcap is installed (Windows only)"""
     return DependencyChecker()._check_npcap()
 
-def check_pip_packages():
-    """Check if required pip packages are installed"""
-    return DependencyChecker()._check_pip_packages()
 
 def check_system_requirements():
     """Check system requirements and dependencies"""

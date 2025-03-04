@@ -462,8 +462,14 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
     def get_gateway_info():
         """Get gateway information"""
         try:
-            gateway_info = getattr(monitor, 'get_gateway_info', lambda: {})(request.args.get('interface'))
-            return jsonify(response(True, gateway_info))
+            gateway_info = getattr(monitor, '_get_gateway_info', lambda: (None, None))()
+            if gateway_info and len(gateway_info) == 2:
+                gateway_ip, gateway_mac = gateway_info
+                return jsonify(response(True, {
+                    'ip': gateway_ip,
+                    'mac': gateway_mac
+                }))
+            return jsonify(response(False, None, "Could not get gateway information")), 404
         except Exception as e:
             app.logger.error(f"Error getting gateway info: {e}")
             return jsonify(response(False, None, str(e))), 500
@@ -485,7 +491,7 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
     @app.route('/api/docs', methods=['GET'])
     def api_docs():
         """Show API documentation"""
-        docs_html = """
+        docs_html = """  
         <!DOCTYPE html>
         <html>
         <head>
@@ -497,7 +503,7 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
                 .endpoint { background: #f4f4f4; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
                 .method { font-weight: bold; display: inline-block; width: 80px; }
                 .path { font-family: monospace; }
-                .description { margin-top: 10px; }
+                .description { margin-top: 10px; } 
                 .parameters { margin-top: 10px; }
                 .parameter { margin-left: 20px; }
                 .param-name { font-weight: bold; }

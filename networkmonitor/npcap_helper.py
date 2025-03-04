@@ -7,8 +7,11 @@ import sys
 import platform
 import logging
 import subprocess
-import winreg
-from typing import Dict, Any, Optional, Tuple, List
+import ctypes
+import tempfile
+from typing import Any, Dict, Optional
+import requests
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -44,189 +47,183 @@ def initialize_npcap() -> bool:
     logger.info("Initializing Npcap...")
     
     if platform.system() != "Windows":
-        logger.info("Not running on Windows, skipping Npcap initialization")
+        logger.info("Npcap initialization skipped - not on Windows")
         return True
     
     # Check if Npcap is installed
     npcap_info = get_npcap_info()
     if not npcap_info.get('installed', False):
-        logger.error("Npcap is not installed. Network monitoring will not work properly.")
-        logger.info("Download and install Npcap from https://npcap.com/")
+        logger.error("Npcap is not installed")
         return False
     
     # Get Npcap directory
     npcap_dir = npcap_info.get('path')
     if not npcap_dir:
-        logger.error("Could not find Npcap installation directory")
+        logger.error("Could not find Npcap directory")
         return False
     
     # Add Npcap directory to PATH environment variable
     success = _add_dll_directories()
+    if not success:
+        logger.error("Failed to add Npcap directories to PATH")
+        return False
     
     # Set specific environment variables for Scapy
     os.environ['SCAPY_USE_PCAPDNET'] = 'True'
     
     # Try to import Scapy modules to verify installation
     try:
-        from scapy.arch import get_if_hwaddr
-        from scapy.layers.l2 import arping
-        from scapy.sendrecv import srloop
-        logger.info("Scapy import successful: Npcap is correctly configured")
+        from scapy.all import conf
+        conf.use_pcap = True
+        logger.info("Scapy configured to use Npcap")
         return True
     except ImportError as e:
-        logger.error(f"Failed to import Scapy modules: {e}")
-        logger.error("Try reinstalling Npcap and check if WinPcap is also installed (they might conflict)")
-        return False
-    except Exception as e:
-        logger.error(f"Unexpected error during Scapy import: {e}")
+        logger.error(f"Failed to configure Scapy: {e}")
         return False
 
 def _add_dll_directories() -> bool:
-    """
-    Add Npcap DLL directories to the DLL search path
-    
-    Returns:
-        bool: True if successful, False otherwise
-    """
-    # Add DLL directories to path - this is more reliable than just setting PATH
+    """Add Npcap DLL directories to the system PATH"""
     try:
-        # Configure PATH environment variable
+        for dll_path in DLL_PATHS:
+            if os.path.exists(dll_path):
+                try:
+                    os.add_dll_directory(dll_path)
+                    logger.debug(f"Added DLL directory: {dll_path}")
+                except Exception as e:
+                    logger.warning(f"Could not add DLL directory {dll_path}: {e}")
+        
+        # Configure PATH environment variable as well
         _configure_dll_path()
-        
-        # Use AddDllDirectory API on Windows 8+
-        if hasattr(os, 'add_dll_directory'):
-            for path in DLL_PATHS:
-                if os.path.exists(path):
-                    try:
-                        os.add_dll_directory(path)
-                        logger.info(f"Added DLL directory: {path}")
-                    except Exception as e:
-                        logger.warning(f"Failed to add DLL directory {path}: {e}")
-        
         return True
     except Exception as e:
-        logger.error(f"Error configuring DLL directories: {e}")
+        logger.error(f"Error adding DLL directories: {e}")
         return False
 
 def _configure_dll_path() -> None:
-    """Configure PATH to include Npcap directories - used by Scapy"""
-    for dll_path in DLL_PATHS:
-        if os.path.exists(dll_path) and dll_path not in os.environ['PATH']:
-            os.environ['PATH'] = dll_path + os.pathsep + os.environ['PATH']
-            logger.info(f"Added to PATH: {dll_path}")
+    """Configure system PATH to include Npcap directories"""
+    try:
+        current_path = os.environ.get('PATH', '')
+        npcap_paths = [p for p in DLL_PATHS if os.path.exists(p)]
+        
+        # Add Npcap paths to PATH if not already present
+        new_paths = []
+        for path in npcap_paths:
+            if path not in current_path:
+                new_paths.append(path)
+        
+        if new_paths:
+            os.environ['PATH'] = os.pathsep.join([current_path] + new_paths)
+            logger.debug(f"Added to PATH: {new_paths}")
+    except Exception as e:
+        logger.warning(f"Error configuring PATH: {e}")
 
 def get_npcap_info() -> Dict[str, Any]:
     """
-    Get detailed information about Npcap installation
+    Get information about Npcap installation
     
     Returns:
-        dict: Information about Npcap installation
+        Dict with keys:
+        - installed (bool): Whether Npcap is installed
+        - path (str): Path to Npcap installation directory
+        - version (str): Npcap version if available
     """
     info = {
         'installed': False,
-        'version': None,
         'path': None,
-        'dll_files': [],
-        'registry': {}
+        'version': None
     }
+    
+    # Early return if not on Windows
+    if platform.system() != "Windows":
+        return info
     
     # Check common installation paths
     for path in NPCAP_PATHS:
         if os.path.exists(path):
-            info['path'] = path
             info['installed'] = True
-            
-            # Look for DLL files
-            if os.path.exists(path):
-                files = os.listdir(path)
-                info['dll_files'] = [f for f in files if f.lower().endswith('.dll')]
-            
+            info['path'] = path
             break
     
-    # Check registry for Npcap information
-    try:
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Npcap') as key:
-            i = 0
-            while True:
-                try:
-                    name, value, _ = winreg.EnumValue(key, i)
-                    info['registry'][name] = value
-                    if name == 'Version':
-                        info['version'] = value
-                    i += 1
-                except WindowsError:
-                    break
-    except WindowsError:
-        logger.debug("Could not find Npcap registry entries")
+    if info['installed']:
+        # Try to get version information
+        try:
+            wpcap_path = os.path.join(info['path'], 'wpcap.dll')
+            if os.path.exists(wpcap_path):
+                version_info = subprocess.check_output(['powershell', '-Command',
+                    f"(Get-Item '{wpcap_path}').VersionInfo.FileVersion"
+                ]).decode().strip()
+                info['version'] = version_info
+        except Exception as e:
+            logger.warning(f"Could not get Npcap version: {e}")
     
     return info
 
 def verify_npcap_installation() -> Dict[str, Any]:
     """
-    Verify Npcap installation and compatibility with Scapy
+    Verify Npcap installation and provide detailed status
     
     Returns:
-        dict: Status of Npcap installation and Scapy compatibility
+        Dict containing verification results:
+        - installed (bool): Whether Npcap is installed
+        - working (bool): Whether Npcap is working properly
+        - errors (List[str]): Any error messages
+        - warnings (List[str]): Any warning messages
     """
     result = {
         'installed': False,
-        'compatible': False,
-        'version': None,
-        'issues': [],
-        'npcap_dir': None
+        'working': False,
+        'errors': [],
+        'warnings': []
     }
     
-    # Get installation info
-    info = get_npcap_info()
-    result['installed'] = info['installed']
-    result['version'] = info['version']
-    result['npcap_dir'] = info['path']
-    
-    if not info['installed']:
-        result['issues'].append("Npcap is not installed")
+    if platform.system() != "Windows":
+        result['warnings'].append("Not running on Windows - Npcap not required")
         return result
     
-    # Check for npcap.dll
-    if info['path'] and os.path.exists(os.path.join(info['path'], 'npcap.dll')):
-        result['compatible'] = True
-    else:
-        result['issues'].append("Could not find npcap.dll")
+    # Check installation
+    npcap_info = get_npcap_info()
+    result['installed'] = npcap_info['installed']
     
-    # Check if Scapy can use Npcap
+    if not result['installed']:
+        result['errors'].append("Npcap is not installed")
+        return result
+    
+    # Check if DLLs are accessible
+    dll_found = False
+    for path in DLL_PATHS:
+        if os.path.exists(os.path.join(path, 'wpcap.dll')):
+            dll_found = True
+            break
+    
+    if not dll_found:
+        result['errors'].append("Could not find Npcap DLLs")
+        return result
+    
+    # Try to initialize Scapy with Npcap
     try:
-        import scapy.all
-        from scapy.arch.windows import get_windows_if_list
-        
-        # Try to get interfaces
-        interfaces = get_windows_if_list()
-        if interfaces:
-            result['compatible'] = True
+        if initialize_npcap():
+            result['working'] = True
         else:
-            result['issues'].append("No network interfaces found using Scapy")
-    except ImportError:
-        result['issues'].append("Could not import Scapy")
+            result['errors'].append("Failed to initialize Npcap with Scapy")
     except Exception as e:
-        result['issues'].append(f"Error testing Scapy compatibility: {e}")
-        
+        result['errors'].append(f"Error testing Npcap: {str(e)}")
+    
     return result
 
 def download_npcap_installer(output_path=None) -> Optional[str]:
     """
-    Download Npcap installer
+    Download the Npcap installer
     
     Args:
-        output_path (str, optional): Path to save the installer to. 
-                                      If None, saves to current directory.
-    
+        output_path: Optional path to save the installer
+        
     Returns:
-        Optional[str]: Path to downloaded file or None if download failed
+        str: Path to downloaded installer, or None if download failed
     """
-    if output_path is None:
-        output_path = "npcap-installer.exe"
+    if not output_path:
+        output_path = os.path.join(tempfile.gettempdir(), 'npcap-installer.exe')
     
     try:
-        import requests
-        
         logger.info(f"Downloading Npcap installer from {NPCAP_INSTALLER_URL}")
         response = requests.get(NPCAP_INSTALLER_URL, stream=True)
         response.raise_for_status()
@@ -242,20 +239,22 @@ def download_npcap_installer(output_path=None) -> Optional[str]:
         return None
 
 if __name__ == "__main__":
-    # Setup basic logging when run directly
     logging.basicConfig(level=logging.INFO)
-    
-    # Test Npcap initialization
-    success = initialize_npcap()
-    if success:
-        print("Npcap initialization successful!")
+    if platform.system() == "Windows":
+        info = get_npcap_info()
+        if info['installed']:
+            print(f"Npcap is installed at: {info['path']}")
+            if info['version']:
+                print(f"Version: {info['version']}")
+        else:
+            print("Npcap is not installed")
+            
+        verify_result = verify_npcap_installation()
+        if verify_result['working']:
+            print("Npcap is working correctly")
+        else:
+            print("Npcap verification failed:")
+            for error in verify_result['errors']:
+                print(f"- {error}")
     else:
-        print("Npcap initialization failed. See logs for details.")
-    
-    # Get detailed information
-    info = get_npcap_info()
-    print(f"\nNpcap Info:")
-    print(f"Installed: {info['installed']}")
-    print(f"Version: {info['version']}")
-    print(f"Path: {info['path']}")
-    print(f"DLL files: {', '.join(info['dll_files'])}")
+        print("Not running on Windows - Npcap not required")

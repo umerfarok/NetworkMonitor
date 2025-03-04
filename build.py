@@ -34,14 +34,26 @@ def create_spec_file():
     is_windows = platform.system() == "Windows"
     is_macos = platform.system() == "Darwin"
     
-    # Get absolute paths
+    # Get absolute paths and ensure they exist
     root_dir = os.path.dirname(os.path.abspath(__file__))
     assets_dir = os.path.join(root_dir, 'assets')
+    cli_path = os.path.join(root_dir, 'networkmonitor', 'scripts', 'networkmonitor_cli.py')  # Fixed path
     
-    # Common options for all platforms - removed web/build from datas
+    # Verify paths exist
+    if not os.path.exists(cli_path):
+        print(f"Error: networkmonitor_cli.py not found at {cli_path}")
+        print("Current directory:", os.getcwd())
+        print("Directory contents:", os.listdir(os.path.join(root_dir, 'networkmonitor', 'scripts')))
+        return False
+        
+    if not os.path.exists(assets_dir):
+        os.makedirs(assets_dir, exist_ok=True)
+        print(f"Created assets directory at {assets_dir}")
+    
+    # Common options for all platforms
     datas = [
         (os.path.join(root_dir, 'assets'), 'assets')
-    ]
+    ] 
     
     # Use absolute paths for icons
     icon_path = None
@@ -66,10 +78,9 @@ block_cipher = None
 
 # Get absolute paths
 root_dir = os.path.dirname(os.path.abspath(SPECPATH))
-assets_dir = os.path.join(root_dir, 'assets')
 
 a = Analysis(
-    [os.path.join(root_dir, 'networkmonitor', 'cli.py')],
+    [r'{cli_path}'],  # Use raw string for Windows compatibility
     pathex=[root_dir],
     binaries=[],
     datas={datas},
@@ -111,7 +122,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    info_plist={
+    info_plist={{
         'CFBundleShortVersionString': '1.0.0',
         'CFBundleVersion': '1.0.0',
         'CFBundleIdentifier': 'com.networkmonitor.app',
@@ -121,7 +132,7 @@ exe = EXE(
         'CFBundleSignature': '????',
         'LSMinimumSystemVersion': '10.13',
         'NSHighResolutionCapable': True,
-    }
+    }}
 )"""
     elif is_windows:
         spec_content += """
@@ -150,7 +161,7 @@ app = BUNDLE(
     name='NetworkMonitor.app',
     icon=os.path.join(assets_dir, 'icon.icns'),
     bundle_identifier='com.networkmonitor.app',
-    info_plist={
+    info_plist={{
         'CFBundleShortVersionString': '1.0.0',
         'CFBundleVersion': '1.0.0',
         'CFBundleIdentifier': 'com.networkmonitor.app',
@@ -160,13 +171,17 @@ app = BUNDLE(
         'CFBundleSignature': '????',
         'LSMinimumSystemVersion': '10.13',
         'NSHighResolutionCapable': True,
-    }
+    }}
 )"""
 
-    with open('NetworkMonitor.spec', 'w') as f:
-        f.write(spec_content)
-    
-    print("Generated NetworkMonitor.spec file")
+    try:
+        with open('NetworkMonitor.spec', 'w') as f:
+            f.write(spec_content)
+        print("Generated NetworkMonitor.spec file")
+        return True
+    except Exception as e:
+        print(f"Error creating spec file: {e}")
+        return False
 
 def build_executable():
     """Build the executable using PyInstaller with size optimizations"""
@@ -178,8 +193,9 @@ def build_executable():
     
     try:
         # Create spec file if it doesn't exist
-        if not os.path.exists('NetworkMonitor.spec'):
-            create_spec_file()
+        if not os.path.exists('NetworkMonitor.spec') and not create_spec_file():
+            print("Failed to create spec file")
+            return False
         
         print("\nBuilding executable with optimized settings...")
         PyInstaller.__main__.run([
