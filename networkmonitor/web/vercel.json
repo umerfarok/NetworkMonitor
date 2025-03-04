@@ -1,0 +1,24 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "master": true
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "http://localhost:5000"
+  }
+}

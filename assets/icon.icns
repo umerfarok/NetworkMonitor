@@ -1,0 +1,2 @@
+# This is a binary file that needs to be converted from the existing .ico file
+# We'll use the CI workflow to handle the conversion using iconutil
