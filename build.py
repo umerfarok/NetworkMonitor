@@ -7,95 +7,109 @@ import sys
 import shutil
 import platform
 from pathlib import Path
-import PyInstaller.__main__
+from typing import Dict, List, Tuple
 
 def clean_build():
     """Clean previous build artifacts"""
     dirs_to_clean = ['build', 'dist']
     for dir_name in dirs_to_clean:
-        if os.path.exists(dir_name):
-            shutil.rmtree(dir_name)
-            print(f"Cleaned {dir_name} directory")
+        try:
+            if os.path.exists(dir_name):
+                shutil.rmtree(dir_name)
+        except Exception as e:
+            print(f"Error cleaning {dir_name}: {e}")
 
-def check_environment():
+def check_environment() -> bool:
     """Check if build environment is properly configured"""
     if sys.version_info >= (3, 12):
-        print("\nWARNING: You are using Python 3.12 or higher.")
-        print("This version may have compatibility issues with PyInstaller.")
-        print("Recommended: Use Python 3.9-3.11 for more reliable builds.")
-        if input("\nContinue with build anyway? (y/n): ").lower() != 'y':
-            return False
-    return True
-
-def create_spec_file():
-    """Create PyInstaller spec file based on platform"""
-    print("Generating platform-specific spec file...")
+        print("Warning: Python 3.12+ might have compatibility issues. Using 3.9-3.11 is recommended.")
     
-    is_windows = platform.system() == "Windows"
-    is_macos = platform.system() == "Darwin"
+    required_modules = ['PyInstaller', 'Flask', 'click', 'scapy']
+    missing_modules = []
     
-    # Get absolute paths and ensure they exist
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    assets_dir = os.path.join(root_dir, 'assets')
-    cli_path = os.path.join(root_dir, 'networkmonitor', 'scripts', 'networkmonitor_cli.py')  # Fixed path
-    
-    # Verify paths exist
-    if not os.path.exists(cli_path):
-        print(f"Error: networkmonitor_cli.py not found at {cli_path}")
-        print("Current directory:", os.getcwd())
-        print("Directory contents:", os.listdir(os.path.join(root_dir, 'networkmonitor', 'scripts')))
+    for module in required_modules:
+        try:
+            __import__(module)
+        except ImportError:
+            missing_modules.append(module)
+            
+    if missing_modules:
+        print("Missing required modules:")
+        for module in missing_modules:
+            print(f"  - {module}")
         return False
         
-    if not os.path.exists(assets_dir):
-        os.makedirs(assets_dir, exist_ok=True)
-        print(f"Created assets directory at {assets_dir}")
-    
-    # Common options for all platforms
-    datas = [
-        (os.path.join(root_dir, 'assets'), 'assets')
-    ] 
-    
-    # Use absolute paths for icons
-    icon_path = None
-    if is_windows:
-        icon_file = os.path.join(assets_dir, 'icon.ico')
-        if os.path.exists(icon_file):
-            icon_path = icon_file
-    elif is_macos:
-        icon_file = os.path.join(assets_dir, 'icon.icns')
-        if os.path.exists(icon_file):
-            icon_path = icon_file
-    
-    if icon_path:
-        print(f"Using icon from: {icon_path}")
-    else:
-        print("Warning: No platform-specific icon found")
-    
-    spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
-import os
+    return True
 
-block_cipher = None
+def get_platform_settings() -> Tuple[str, Dict]:
+    """Get platform-specific build settings"""
+    system = platform.system().lower()
+    
+    # Base settings common to all platforms
+    base_settings = {
+        'name': 'NetworkMonitor',
+        'console': True,
+        'debug': False,
+        'noconfirm': True,
+        'strip': True,
+        'clean': True
+    }
+    
+    # Platform-specific settings
+    if system == 'windows':
+        icon_file = 'assets/icon.ico'
+        base_settings.update({
+            'uac_admin': True,
+            'win_private_assemblies': True,
+            'win_no_prefer_redirects': True,
+            'hiddenimports': ['win32com', 'win32com.shell', 'win32api', 'wmi']
+        })
+    elif system == 'darwin':
+        icon_file = 'assets/icon.icns'
+        base_settings['hiddenimports'] = ['pkg_resources.py2_warn']
+    else:  # Linux
+        icon_file = 'assets/icon.ico'  # Use .ico for Linux as well
+        base_settings['hiddenimports'] = ['pkg_resources.py2_warn']
+    
+    return icon_file, base_settings
 
-# Get absolute paths
-root_dir = os.path.dirname(os.path.abspath(SPECPATH))
+def create_spec_file() -> bool:
+    """Create PyInstaller spec file based on platform"""
+    try:
+        # Get platform-specific settings
+        icon_file, settings = get_platform_settings()
+        
+        if not os.path.exists(icon_file):
+            print(f"Warning: Icon file not found at {icon_file}")
+            icon_file = None
+        
+        # Convert settings to spec file content
+        spec_content = """# -*- mode: python ; coding: utf-8 -*-
+
+from PyInstaller.building.api import PYZ, EXE, COLLECT
+from PyInstaller.building.build_main import Analysis
+
+datas = [
+    ('assets/*', 'assets'),
+    ('networkmonitor/web/build/*', 'web/build')
+]
 
 a = Analysis(
-    [r'{cli_path}'],  # Use raw string for Windows compatibility
-    pathex=[root_dir],
+    ['networkmonitor/scripts/networkmonitor_cli.py'],
+    pathex=[],
     binaries=[],
-    datas={datas},
-    hiddenimports=['scapy.layers.all', 'engineio.async_drivers.threading'],
+    datas=datas,
+    hiddenimports={hiddenimports},
     hookspath=[],
     hooksconfig={{}},
     runtime_hooks=[],
-    excludes=['networkmonitor.web'],  # Exclude web frontend
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
+    excludes=[],
+    win_no_prefer_redirects={win_no_prefer_redirects},
+    win_private_assemblies={win_private_assemblies},
     noarchive=False,
 )
 
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure, a.zipped_data)
 
 exe = EXE(
     pyz,
@@ -104,111 +118,68 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='NetworkMonitor',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,"""
-
-    if icon_path:
-        spec_content += f"""
-    icon=[r'{icon_path}'],"""
-
-    if is_macos:
-        spec_content += """
-    console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=True,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    info_plist={{
-        'CFBundleShortVersionString': '1.0.0',
-        'CFBundleVersion': '1.0.0',
-        'CFBundleIdentifier': 'com.networkmonitor.app',
-        'CFBundleName': 'NetworkMonitor',
-        'CFBundleDisplayName': 'NetworkMonitor',
-        'CFBundlePackageType': 'APPL',
-        'CFBundleSignature': '????',
-        'LSMinimumSystemVersion': '10.13',
-        'NSHighResolutionCapable': True,
-    }}
-)"""
-    elif is_windows:
-        spec_content += """
-    console=True,
+    name='{name}',
+    debug={debug},
+    strip={strip},
+    upx=True,
+    runtime_tmpdir=None,
+    console={console},
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
-    entitlements_file=None,
-    uac_admin=True,
-    version='file_version_info.txt'
-)"""
-    else:  # Linux
-        spec_content += """
-    console=True,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-)"""
-
-    if is_macos:
-        spec_content += """
-app = BUNDLE(
-    exe,
-    name='NetworkMonitor.app',
-    icon=os.path.join(assets_dir, 'icon.icns'),
-    bundle_identifier='com.networkmonitor.app',
-    info_plist={{
-        'CFBundleShortVersionString': '1.0.0',
-        'CFBundleVersion': '1.0.0',
-        'CFBundleIdentifier': 'com.networkmonitor.app',
-        'CFBundleName': 'NetworkMonitor',
-        'CFBundleDisplayName': 'NetworkMonitor',
-        'CFBundlePackageType': 'APPL',
-        'CFBundleSignature': '????',
-        'LSMinimumSystemVersion': '10.13',
-        'NSHighResolutionCapable': True,
-    }}
-)"""
-
-    try:
-        with open('NetworkMonitor.spec', 'w') as f:
+    entitlements_file=None,""".format(
+            name=settings['name'],
+            hiddenimports=settings.get('hiddenimports', []),
+            win_no_prefer_redirects=settings.get('win_no_prefer_redirects', False),
+            win_private_assemblies=settings.get('win_private_assemblies', False),
+            debug=settings['debug'],
+            strip=settings['strip'],
+            console=settings['console']
+        )
+        
+        # Add icon if available
+        if icon_file:
+            spec_content += f"\n    icon=['{icon_file}'],"
+            
+        spec_content += "\n)"
+        
+        # Write spec file
+        with open('NetworkMonitor.spec', 'w', encoding='utf-8') as f:
             f.write(spec_content)
-        print("Generated NetworkMonitor.spec file")
+            
+        print("Generated NetworkMonitor.spec file\n")
         return True
+        
     except Exception as e:
         print(f"Error creating spec file: {e}")
         return False
 
-def build_executable():
-    """Build the executable using PyInstaller with size optimizations"""
-    if not check_environment():
-        return False
-        
-    # Clean previous builds
-    clean_build()
-    
+def build_executable() -> bool:
+    """Build the executable using PyInstaller"""
     try:
-        # Create spec file if it doesn't exist
-        if not os.path.exists('NetworkMonitor.spec') and not create_spec_file():
-            print("Failed to create spec file")
-            return False
+        import PyInstaller.__main__
         
-        print("\nBuilding executable with optimized settings...")
+        # Clean previous build
+        clean_build()
+        
+        # Create spec file
+        if not create_spec_file():
+            return False
+            
+        # Build with optimized settings
+        print("Building executable with optimized settings...")
         PyInstaller.__main__.run([
             'NetworkMonitor.spec',
+            '--noconfirm',
             '--clean',
-            '--noconfirm'
+            '--strip'
         ])
         
-        print("\nBuild completed successfully!")
         return True
         
     except Exception as e:
-        print(f"\nError during build: {str(e)}")
+        print(f"Error during build: {e}")
         print("\nTroubleshooting tips:")
         print("1. Use Python 3.9-3.11 instead of 3.12+")
         print("2. Run 'pip install -r requirements.txt' to update dependencies")
@@ -217,5 +188,16 @@ def build_executable():
         return False
 
 if __name__ == '__main__':
-    success = build_executable()
-    sys.exit(0 if success else 1)
+    try:
+        if not check_environment():
+            sys.exit(1)
+            
+        if not build_executable():
+            sys.exit(1)
+            
+        print("\nBuild completed successfully!")
+        sys.exit(0)
+        
+    except Exception as e:
+        print(f"\nUnexpected error: {e}")
+        sys.exit(1)
