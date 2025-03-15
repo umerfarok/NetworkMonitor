@@ -1,0 +1,410 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  WINDOWS_APP_NAME: NetworkMonitor-Windows
+  LINUX_APP_NAME: NetworkMonitor-Linux
+  MACOS_APP_NAME: NetworkMonitor-macOS
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: |
+          requirements.txt
+          requirements-build.txt
+    
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y net-tools iptables tcpdump libpcap-dev
+    
+    - name: Install system dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install libpcap tcpdump
+    
+    - name: Install system dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        curl -L https://npcap.com/dist/npcap-1.60.exe -o npcap-installer.exe
+        .\npcap-installer.exe /S /winpcap_mode=yes
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install -r requirements.txt --no-cache-dir
+        pip install -r requirements-build.txt --no-cache-dir
+        pip install pytest pytest-cov pytest-xdist mock
+        
+    - name: Run tests
+      run: |
+        python -m pytest tests/ -v --cov=networkmonitor --junitxml=pytest.xml --cov-report=xml
+        
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}
+        path: |
+          pytest.xml
+          coverage.xml
+        retention-days: 30
+
+  build:
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: |
+          requirements.txt
+          requirements-build.txt
+    
+    - name: Get version
+      id: get_version
+      shell: bash
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          VERSION="0.1.0-alpha.${SHORT_SHA}"
+        fi
+        echo "Version will be: $VERSION"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Generate platform icons (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        # Install ImageMagick if needed
+        if (!(Get-Command magick -ErrorAction SilentlyContinue)) {
+          choco install imagemagick.app -y
+        }
+        
+        # Convert SVG to ICO
+        magick convert -background none assets/icon.svg -define icon:auto-resize=256,128,64,48,32,16 assets/icon.ico
+    
+    - name: Generate platform icons (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install imagemagick
+        
+        # Create iconset directory
+        mkdir icon.iconset
+        
+        # Convert SVG to PNG in different sizes
+        convert -background none -resize 16x16 assets/icon.svg icon.iconset/icon_16x16.png
+        convert -background none -resize 32x32 assets/icon.svg icon.iconset/icon_16x16@2x.png
+        convert -background none -resize 32x32 assets/icon.svg icon.iconset/icon_32x32.png
+        convert -background none -resize 64x64 assets/icon.svg icon.iconset/icon_32x32@2x.png
+        convert -background none -resize 128x128 assets/icon.svg icon.iconset/icon_128x128.png
+        convert -background none -resize 256x256 assets/icon.svg icon.iconset/icon_128x128@2x.png
+        convert -background none -resize 256x256 assets/icon.svg icon.iconset/icon_256x256.png
+        convert -background none -resize 512x512 assets/icon.svg icon.iconset/icon_256x256@2x.png
+        convert -background none -resize 512x512 assets/icon.svg icon.iconset/icon_512x512.png
+        convert -background none -resize 1024x1024 assets/icon.svg icon.iconset/icon_512x512@2x.png
+        
+        # Convert iconset to icns
+        iconutil -c icns icon.iconset
+        
+        # Move to assets directory
+        mv icon.icns assets/icon.icns
+    
+    - name: Install system dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        choco install nsis
+        choco install gtk-runtime
+    
+    - name: Install system dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install imagemagick
+        
+        # Convert SVG to PNG in different sizes
+        convert -background none -resize 16x16 assets/icon.svg icon.iconset/icon_16x16.png
+        convert -background none -resize 32x32 assets/icon.svg icon.iconset/icon_16x16@2x.png
+        convert -background none -resize 32x32 assets/icon.svg icon.iconset/icon_32x32.png
+        convert -background none -resize 64x64 assets/icon.svg icon.iconset/icon_32x32@2x.png
+        convert -background none -resize 128x128 assets/icon.svg icon.iconset/icon_128x128.png
+        convert -background none -resize 256x256 assets/icon.svg icon.iconset/icon_128x128@2x.png
+        convert -background none -resize 256x256 assets/icon.svg icon.iconset/icon_256x256.png
+        convert -background none -resize 512x512 assets/icon.svg icon.iconset/icon_256x256@2x.png
+        convert -background none -resize 512x512 assets/icon.svg icon.iconset/icon_512x512.png
+        convert -background none -resize 1024x1024 assets/icon.svg icon.iconset/icon_512x512@2x.png
+        
+        # Convert iconset to icns
+        iconutil -c icns icon.iconset
+        
+        # Move to assets directory
+        mv icon.icns assets/icon.icns
+    
+    - name: Install Python dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        
+        # Install core dependencies separately first to ensure they're available
+        pip install flask==2.0.0 flask-cors==3.0.0 click==8.0.0 scapy==2.5.0 --no-cache-dir
+        
+        # Install build requirements
+        pip install -r requirements-build.txt --no-cache-dir || {
+          echo "Some build requirements failed but continuing..."
+          # List what was actually installed
+          pip list
+        }
+        
+        # Install main requirements
+        pip install -r requirements.txt --no-cache-dir || {
+          echo "Some requirements failed but continuing..."
+          # List what was actually installed
+          pip list
+        }
+        
+        # Verify critical packages are installed
+        python -c "import flask; import click; import scapy; print('Core dependencies verified')" || exit 1
+        
+    - name: Build application
+      env:
+        APP_VERSION: ${{ steps.get_version.outputs.version }}
+      run: |
+        # Verify Python environment before build
+        python --version
+        which python
+        pip list
+        
+        # Run build with more verbosity for debugging
+        python -v build.py
+    
+    - name: Package Windows artifacts
+      if: runner.os == 'Windows'
+      run: |
+        cd dist
+        7z a -tzip ${{ env.WINDOWS_APP_NAME }}-${{ steps.get_version.outputs.version }}.zip NetworkMonitor.exe
+        7z a -tzip ${{ env.WINDOWS_APP_NAME }}-Setup-${{ steps.get_version.outputs.version }}.zip NetworkMonitor_Setup*.exe
+    
+    - name: Package Linux artifact
+      if: runner.os == 'Linux'
+      run: |
+        cd dist
+        tar czf ${{ env.LINUX_APP_NAME }}-${{ steps.get_version.outputs.version }}.tar.gz NetworkMonitor
+    
+    - name: Package macOS artifact
+      if: runner.os == 'macOS'
+      run: |
+        cd dist
+        if [ -d "NetworkMonitor.app" ]; then
+          # Package app bundle if it exists
+          zip -r ${{ env.MACOS_APP_NAME }}-${{ steps.get_version.outputs.version }}.zip NetworkMonitor.app
+        elif [ -f "NetworkMonitor" ]; then
+          # Package binary if app bundle doesn't exist
+          zip -r ${{ env.MACOS_APP_NAME }}-${{ steps.get_version.outputs.version }}.zip NetworkMonitor
+        else
+          echo "No build artifacts found in dist directory"
+          ls -la
+          exit 1
+        fi
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ runner.os }}-artifacts
+        path: |
+          dist/*.zip
+          dist/*.tar.gz
+          dist/*.dmg
+        retention-days: 5
+
+  create-release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Get version from tag
+      id: get_version
+      run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        merge-multiple: true
+    
+    - name: Display structure of downloaded files
+      run: ls -R artifacts/
+    
+    - name: Get Changelog Entry
+      id: changelog
+      run: |
+        awk '/^## Version/{p=NR+1}(NR<=p){print}' CHANGELOG.md > release_notes.md
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: NetworkMonitor v${{ steps.get_version.outputs.version }}
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+        files: |
+          artifacts/**/*.zip
+          artifacts/**/*.tar.gz
+          artifacts/**/*.dmg
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-to-gh-pages:
+    needs: create-release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install mkdocs mkdocs-material jq
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+    
+    - name: Build documentation
+      run: |
+        mkdir -p docs/guide docs/downloads
+        cp README.md docs/index.md
+        cp DEVELOPER.md docs/guide/developer.md
+        
+        VERSION="${GITHUB_REF#refs/tags/v}"
+        
+        cat > docs/downloads/index.md << EOL
+        # Downloads
+        
+        ## Latest Release (v${VERSION})
+        
+        ### Windows
+        - [NetworkMonitor Setup (Installer)](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-Setup-${VERSION}.zip)
+        - [NetworkMonitor Portable](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-${VERSION}.zip)
+        
+        ### Linux
+        - [NetworkMonitor for Linux](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Linux-${VERSION}.tar.gz)
+        
+        ### macOS
+        - [NetworkMonitor for macOS](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-macOS-${VERSION}.zip)
+        
+        ## System Requirements
+        
+        ### Windows
+        - Windows 10 or later (64-bit)
+        - [Npcap](https://npcap.com) installed in WinPcap compatibility mode
+        
+        ### Linux
+        - Modern Linux distribution (Ubuntu 20.04+, Debian 11+, etc.)
+        - libpcap installed (\`sudo apt install libpcap-dev\` or equivalent)
+        - Root/sudo privileges for packet capture
+        
+        ### macOS
+        - macOS 10.15 (Catalina) or later
+        - libpcap installed (pre-installed or via \`brew install libpcap\`)
+        - Root privileges for packet capture
+        EOL
+        
+        cat > mkdocs.yml << EOL
+        site_name: NetworkMonitor
+        site_description: Network monitoring and analysis tool
+        repo_url: https://github.com/${{ github.repository }}
+        edit_uri: edit/main/docs/
+        
+        theme:
+          name: material
+          palette:
+            scheme: slate
+            primary: blue
+            accent: light blue
+          features:
+            - navigation.instant
+            - navigation.tracking
+            - navigation.sections
+            - navigation.expand
+            - navigation.top
+            - toc.follow
+            - search.suggest
+            - search.highlight
+        
+        nav:
+          - Home: index.md
+          - Downloads: downloads/index.md
+          - Documentation:
+            - Developer Guide: guide/developer.md
+        
+        markdown_extensions:
+          - pymdownx.highlight:
+              anchor_linenums: true
+          - pymdownx.inlinehilite
+          - pymdownx.snippets
+          - pymdownx.superfences
+          - admonition
+          - footnotes
+          - attr_list
+          - md_in_html
+        EOL
+        
+        mkdocs build
+    
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v4
+      with:
+        path: site
+    
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4

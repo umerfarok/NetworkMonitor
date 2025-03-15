@@ -10,7 +10,6 @@ import queue
 import os 
 import sys
 import requests
-import ifaddr
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
@@ -64,7 +63,6 @@ class NetworkController:
         self.protected_devices: List[str] = []
         self._gateway_mac = None
         self._gateway_ip = None
-        self.addrs = ifaddr.get_adapters()  # Store adapters list
         
         # Initialize Windows system paths
         if self.os_type == "Windows":
@@ -96,10 +94,8 @@ class NetworkController:
         self.last_bytes_total = 0
 
     def _get_windows_command_path(self, command):
-        """Get full path for Windows system commands"""
         system32 = os.path.join(os.environ['SystemRoot'], 'System32')
-        command_path = os.path.join(system32, command)
-        return command_path if os.path.exists(command_path) else command
+        return os.path.join(system32, f"{command}.exe")
 
     def setup_logging(self):
         logging.basicConfig(
@@ -112,86 +108,54 @@ class NetworkController:
         )   
     
     def _get_gateway_info(self) -> Tuple[str, str]:
-        """Get gateway IP and MAC address"""
+        if self._gateway_ip and self._gateway_mac:
+            return self._gateway_ip, self._gateway_mac
+            
         try:
             if self.os_type == "Windows":
-                # Get default gateway IP
-                output = subprocess.check_output([self.ipconfig_path], 
-                                              text=True,
-                                              creationflags=subprocess.CREATE_NO_WINDOW)
-                gateway_ip = None
-                print("\n=== Gateway Detection Output ===")
-                print(output)
+                # Get default route information using 'route print'
+                route_cmd = subprocess.run(['route', 'print', '0.0.0.0'], 
+                                       capture_output=True, 
+                                       text=True,
+                                       creationflags=subprocess.CREATE_NO_WINDOW)
                 
-                # Parse output line by line
-                lines = output.split('\n')
-                i = 0
-                while i < len(lines):
-                    line = lines[i].strip()
-                    if "Default Gateway" in line:
-                        # Skip if line ends with colon
-                        if line.strip().endswith(':'):
-                            i += 1
-                            continue
-                            
-                        # Check current line for IPv4
-                        possible_ip = line.split(':')[-1].strip()
-                        print(f"Found gateway line: {line}")
-                        print(f"Checking IP: {possible_ip}")
-                        
-                        # If this line has an IPv4 address
-                        if '.' in possible_ip and not possible_ip.startswith('fe80'):
-                            gateway_ip = possible_ip
-                            print(f"Found IPv4 Gateway: {gateway_ip}")
+                for line in route_cmd.stdout.splitlines():
+                    if '0.0.0.0' in line:
+                        parts = line.split()
+                        if len(parts) >= 4:
+                            self._gateway_ip = parts[3]
                             break
-                        
-                        # If not, check next line
-                        elif i + 1 < len(lines):
-                            next_line = lines[i + 1].strip()
-                            if '.' in next_line and not next_line.startswith('fe80'):
-                                gateway_ip = next_line
-                                print(f"Found IPv4 Gateway on next line: {gateway_ip}")
-                                break
-                    i += 1
-                
-                print(f"\nFinal Gateway IP: {gateway_ip}")
-                
-                if gateway_ip:
-                    # Get gateway MAC using ARP
-                    print("\nGetting MAC address from ARP table...")
-                    arp_output = subprocess.check_output([self.arp_path, "-a"], 
-                                                       text=True,
-                                                       creationflags=subprocess.CREATE_NO_WINDOW)
-                    print("\nARP table output:")
-                    print(arp_output)
-                    
-                    for line in arp_output.split('\n'):
-                        if gateway_ip in line:
-                            try:
-                                parts = line.split()
-                                mac = parts[1].replace('-', ':')
-                                print(f"Found Gateway MAC: {mac}")
-                                return gateway_ip, mac
-                            except IndexError:
-                                continue
-                
-                print("Failed to find gateway MAC address")
-                return None, None
-                
             else:
-                # Linux/MacOS implementation
-                gateway_ip = subprocess.check_output("ip route | grep default | cut -d' ' -f3", 
-                                                  shell=True).decode().strip()
-                if gateway_ip:
-                    result = srp(Ether(dst="ff:ff:ff:ff:ff:ff")/ARP(pdst=gateway_ip), 
-                               timeout=2, verbose=False)[0]
-                    if result:
-                        return gateway_ip, result[0][1].hwsrc
-    
+                # For Linux/Mac, use psutil to get default gateway
+                gateways = psutil.net_if_stats()
+                for interface, stats in gateways.items():
+                    if stats.isup and interface != 'lo':
+                        addrs = psutil.net_if_addrs()[interface]
+                        for addr in addrs:
+                            if addr.family == socket.AF_INET:
+                                self._gateway_ip = addr.address
+                                break
+                        if self._gateway_ip:
+                            break
+
+            # Get gateway MAC using ARP
+            if self._gateway_ip:
+                arp_output = subprocess.check_output([self.arp_path, "-a"], 
+                                                text=True,
+                                                creationflags=subprocess.CREATE_NO_WINDOW)
+                
+                for line in arp_output.splitlines():
+                    if self._gateway_ip in line:
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            self._gateway_mac = parts[1].replace('-', ':').upper()
+                            break
+                            
         except Exception as e:
             logging.error(f"Error getting gateway info: {e}")
-            print(f"\nError during gateway detection: {str(e)}")
-        return None, None
+            return None, None
+            
+        return self._gateway_ip, self._gateway_mac
 
     def protect_device(self, ip: str) -> bool:
         """Enable protection for a device"""
@@ -321,18 +285,19 @@ class NetworkController:
     def get_interfaces(self) -> List[Dict]:
         """Get all network interfaces"""
         interfaces = []
-        adapters = ifaddr.get_adapters()
+        stats = psutil.net_if_stats()
+        addrs = psutil.net_if_addrs()
         
-        for adapter in adapters:
-            for ip in adapter.ips:
-                # Only handle IPv4
-                if isinstance(ip.ip, str):
-                    interfaces.append({
-                        'name': adapter.nice_name,
-                        'ip': ip.ip,
-                        'network_mask': ip.network_bits if hasattr(ip, 'network_bits') else 24,
-                        'stats': None
-                    })
+        for interface, stat in stats.items():
+            if stat.isup:
+                for addr in addrs.get(interface, []):
+                    if addr.family == socket.AF_INET:
+                        interfaces.append({
+                            'name': interface,
+                            'ip': addr.address,
+                            'network_mask': addr.netmask,
+                            'stats': stat
+                        })
         return interfaces
 
     def get_wifi_interfaces(self) -> List[str]:
@@ -409,50 +374,14 @@ class NetworkController:
     def get_default_interface(self) -> str:
         """Get default network interface"""
         try:
-            if self.os_type == "Windows":
-                # Try getting interface from WMI first
-                if hasattr(self, 'windows_monitor'):
-                    interfaces = self.windows_monitor.get_interfaces()
-                    # First try to find a WiFi interface
-                    for interface in interfaces:
-                        if interface['type'] == 'wifi' and interface['status'] == 'up':
-                            return interface['name']
-                    # If no WiFi, try any active interface
-                    for interface in interfaces:
-                        if interface['status'] == 'up':
-                            return interface['name']
-
-                # Fallback to ipconfig parsing
-                output = subprocess.check_output([self.ipconfig_path], 
-                                              text=True, 
-                                              creationflags=subprocess.CREATE_NO_WINDOW)
-                current_section = None
-                for line in output.splitlines():
-                    line = line.strip()
-                    
-                    # Capture adapter section
-                    if line.endswith(':'):
-                        current_section = line[:-1].strip()
-                        continue
-
-                    # Look for IPv4 address in current section
-                    if current_section and "IPv4 Address" in line and ":" in line:
-                        if current_section.startswith('Wireless LAN adapter '):
-                            interface_name = current_section[len('Wireless LAN adapter '):]
-                        elif current_section.startswith('Ethernet adapter '):
-                            interface_name = current_section[len('Ethernet adapter '):]
-                        else:
-                            interface_name = current_section
-                            
-                        logging.info(f"Found active interface: {interface_name}")
-                        return interface_name
-            else:
-                # Linux/MacOS code
-                for adapter in self.addrs:
-                    for ip in adapter.ips:
-                        if isinstance(ip.ip, str) and not ip.ip.startswith('127.'):
-                            return adapter.nice_name
-                            
+            # Use psutil to find the default interface
+            stats = psutil.net_if_stats()
+            for interface, stat in stats.items():
+                if stat.isup and interface != 'lo':
+                    addrs = psutil.net_if_addrs()[interface]
+                    for addr in addrs:
+                        if addr.family == socket.AF_INET and not addr.address.startswith('127.'):
+                            return interface
         except Exception as e:
             logging.error(f"Error getting default interface: {e}")
         return None
@@ -460,70 +389,19 @@ class NetworkController:
     def get_interface_ip(self, interface: str) -> str:
         """Get IP address for a network interface"""
         try:
-            if self.os_type == "Windows":
-                logging.info(f"Getting IP for Windows interface: {interface}")
-                # Get IP using ipconfig
-                output = subprocess.check_output([self.ipconfig_path], 
-                                              text=True,
-                                              creationflags=subprocess.CREATE_NO_WINDOW)
-                
-                logging.debug("ipconfig output:")
-                logging.debug(output)
-                
-                current_adapter = None
-                interface_found = False
-                
-                for line in output.splitlines():
-                    line = line.strip()
-                    
-                    # Check for adapter section
-                    if line.endswith(':'):
-                        current_adapter = line[:-1].strip()
-                        if current_adapter.startswith('Ethernet adapter '):
-                            current_adapter = current_adapter[len('Ethernet adapter '):]
-                        elif current_adapter.startswith('Wireless LAN adapter '):
-                            current_adapter = current_adapter[len('Wireless LAN adapter '):]
-                        logging.debug(f"Found adapter section: {current_adapter}")
-                            
-                        # Check if this is our target interface
-                        if current_adapter and (
-                            interface.lower() in current_adapter.lower() or 
-                            current_adapter.lower() in interface.lower() or
-                            (interface.lower() == "wi-fi" and "wireless" in current_adapter.lower())
-                        ):
-                            interface_found = True
-                            logging.debug(f"Matched interface: {current_adapter}")
-                    
-                    # If we're in the right interface section
-                    elif interface_found and "IPv4 Address" in line and ":" in line:
-                        ip = line.split(":")[-1].strip()
-                        # Remove any extra parentheses
-                        ip = ip.split('(')[0].strip()
-                        logging.info(f"Found IP {ip} for interface {interface}")
-                        return ip
-                        
-                    # Reset interface_found if we hit a blank line (new section)
-                    elif not line:
-                        interface_found = False
-                        
-            else:
-                # Original Linux/Mac code
-                for adapter in self.addrs:
-                    if adapter.nice_name == interface:
-                        for ip in adapter.ips:
-                            if isinstance(ip.ip, str):
-                                return ip.ip
-                                
+            addrs = psutil.net_if_addrs().get(interface, [])
+            for addr in addrs:
+                if addr.family == socket.AF_INET:
+                    return addr.address
         except Exception as e:
             logging.error(f"Error getting interface IP: {e}")
-            logging.debug(f"Exception details:", exc_info=True)
         return None
 
     def get_connected_devices(self, interface: str = None) -> List[Device]:
         """Scan network for connected devices"""
         try:
             if not interface:
-                interface = self.get_default_interface()
+                interface = self.get_default_interface() 
             
             if not interface:
                 raise Exception("No valid network interface found")

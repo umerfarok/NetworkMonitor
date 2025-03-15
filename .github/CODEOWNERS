@@ -1,0 +1,17 @@
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# @umerfarok will be requested for review when someone 
+# opens a pull request.
+*       @umerfarok
+
+# Network monitoring core
+/networkmonitor/monitor.py @umerfarok
+/networkmonitor/npcap_helper.py @umerfarok
+
+# Web interface
+/networkmonitor/web/ @umerfarok
+
+# Build and deployment
+/.github/workflows/ @umerfarok
+/build.py @umerfarok
+/installer.nsi @umerfarok

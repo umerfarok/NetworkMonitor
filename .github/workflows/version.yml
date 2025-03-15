@@ -1,0 +1,266 @@
+name: Version Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel toml
+    
+    - name: Get current version
+      id: current_version
+      run: |
+        # Try getting version from different files
+        version=""
+        
+        # Try setup.py first
+        if [ -f "setup.py" ]; then
+          version=$(grep -m1 'version = ' setup.py | cut -d'"' -f2)
+        fi
+        
+        # Try pyproject.toml if no version found
+        if [ -z "$version" ] && [ -f "pyproject.toml" ]; then
+          version=$(grep -m1 'version = ' pyproject.toml | cut -d'"' -f2)
+        fi
+        
+        # Try __init__.py if still no version
+        if [ -z "$version" ] && [ -f "networkmonitor/__init__.py" ]; then
+          version=$(grep -m1 '__version__ = ' networkmonitor/__init__.py | cut -d'"' -f2)
+        fi
+        
+        # Default to 0.1.0 if no version found
+        if [ -z "$version" ]; then
+          version="0.1.0"
+          echo "No version found in files, defaulting to $version"
+        fi
+        
+        echo "Current version: $version"
+        echo "current_version=$version" >> $GITHUB_OUTPUT
+    
+    - name: Calculate new version
+      id: new_version
+      run: |
+        CURRENT=${{ steps.current_version.outputs.current_version }}
+        TYPE=${{ github.event.inputs.version_type }}
+        
+        # Remove any pre-release suffix for calculation
+        BASE_VERSION=$(echo "$CURRENT" | cut -d'-' -f1)
+        
+        # Split version into parts
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+        
+        # Increment based on type
+        case $TYPE in
+          major)
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            ;;
+          minor)
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            ;;
+          patch)
+            PATCH=$((PATCH + 1))
+            ;;
+        esac
+        
+        NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+        if [[ "${{ github.event.inputs.prerelease }}" == "true" ]]; then
+          NEW_VERSION="${NEW_VERSION}-beta"
+        fi
+        
+        echo "New version will be: $NEW_VERSION"
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "version_tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Update version in files
+      run: |
+        NEW_VERSION=${{ steps.new_version.outputs.new_version }}
+        
+        # Function to safely update file with sed
+        update_file() {
+          local file=$1
+          local pattern=$2
+          local replacement=$3
+          if [ -f "$file" ]; then
+            sed -i "s/$pattern/$replacement/" "$file"
+            echo "Updated version in $file"
+          fi
+        }
+        
+        # Update Python files
+        update_file "setup.py" "version = \".*\"" "version = \"$NEW_VERSION\""
+        update_file "networkmonitor/__init__.py" "__version__ = \".*\"" "__version__ = \"$NEW_VERSION\""
+        update_file "pyproject.toml" "version = \".*\"" "version = \"$NEW_VERSION\""
+        
+        # Update JavaScript files
+        update_file "networkmonitor/web/package.json" "\"version\": \".*\"" "\"version\": \"$NEW_VERSION\""
+        
+        # Update installer files
+        update_file "installer.nsi" "!define VERSION \".*\"" "!define VERSION \"$NEW_VERSION\""
+        
+        # Verify updates
+        echo "Version number updates completed. New version: $NEW_VERSION"
+        git diff
+    
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Get commits since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
+        if [ "$LAST_TAG" = "none" ]; then
+          COMMITS=$(git log --pretty=format:"- %s")
+        else
+          COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"- %s")
+        fi
+        
+        # Categorize commits
+        FEATURES=$(echo "$COMMITS" | grep -i '^- feat' || true)
+        FIXES=$(echo "$COMMITS" | grep -i '^- fix' || true)
+        DOCS=$(echo "$COMMITS" | grep -i '^- docs' || true)
+        OTHER=$(echo "$COMMITS" | grep -iv '^- \(feat\|fix\|docs\)' || true)
+        
+        # Create changelog entry
+        {
+          echo "# Changelog"
+          echo ""
+          echo "## Version ${{ steps.new_version.outputs.new_version }}"
+          echo ""
+          if [ ! -z "$FEATURES" ]; then
+            echo "### Features"
+            echo "$FEATURES"
+            echo ""
+          fi
+          if [ ! -z "$FIXES" ]; then
+            echo "### Bug Fixes"
+            echo "$FIXES"
+            echo ""
+          fi
+          if [ ! -z "$DOCS" ]; then
+            echo "### Documentation"
+            echo "$DOCS"
+            echo ""
+          fi
+          if [ ! -z "$OTHER" ]; then
+            echo "### Other Changes"
+            echo "$OTHER"
+            echo ""
+          fi
+          if [ -f CHANGELOG.md ]; then
+            echo "## Previous Versions"
+            cat CHANGELOG.md
+          fi
+        } > CHANGELOG.new
+        mv CHANGELOG.new CHANGELOG.md
+        
+        # Store changelog for PR
+        CHANGELOG_BODY=$(cat << EOF
+        Version ${{ steps.new_version.outputs.new_version }}
+        
+        ${FEATURES:+### Features
+        $FEATURES
+        
+        }${FIXES:+### Bug Fixes
+        $FIXES
+        
+        }${DOCS:+### Documentation
+        $DOCS
+        
+        }${OTHER:+### Other Changes
+        $OTHER}
+        EOF
+        )
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG_BODY" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v6
+      with:
+        commit-message: |
+          chore: bump version to ${{ steps.new_version.outputs.new_version }}
+          
+          - Updated version numbers across all platform builds
+          - Generated changelog
+          - Prepared for ${{ github.event.inputs.prerelease == 'true' && 'pre-release' || 'release' }}
+        title: "Version bump to ${{ steps.new_version.outputs.new_version }}"
+        body: |
+          # Version Bump: ${{ steps.new_version.outputs.new_version }}
+          
+          This PR prepares for the ${{ github.event.inputs.prerelease == 'true' && 'pre-release' || 'release' }} of version ${{ steps.new_version.outputs.new_version }}.
+          
+          ## Changes Made
+          - Updated version numbers in all configuration files
+          - Generated changelog entries
+          - Prepared release artifacts
+          
+          ## Changelog
+          ```markdown
+          ${{ steps.changelog.outputs.changelog }}
+          ```
+          
+          ## Next Steps
+          1. Review the changes
+          2. Merge this PR
+          3. A new tag `${{ steps.new_version.outputs.version_tag }}` will be created
+          4. Release workflow will automatically:
+             - Build all platform versions
+             - Create GitHub release
+             - Upload artifacts
+             - Update documentation
+          
+          ## Versioned Files Updated
+          - setup.py
+          - networkmonitor/__init__.py
+          - pyproject.toml (if exists)
+          - networkmonitor/web/package.json (if exists)
+          - installer.nsi (if exists)
+        branch: "version-bump/${{ steps.new_version.outputs.new_version }}"
+        base: "main"
+        labels: |
+          version-bump
+          automated pr
+          ${{ github.event.inputs.prerelease == 'true' && 'pre-release' || 'release' }}
+        reviewers: "umerfarok"
+    
+    - name: Create Git Tag
+      if: github.event.pull_request.merged == true
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git tag -a ${{ steps.new_version.outputs.version_tag }} -m "Release ${{ steps.new_version.outputs.new_version }}"
+        git push origin ${{ steps.new_version.outputs.version_tag }}
