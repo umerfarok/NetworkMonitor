@@ -101,7 +101,6 @@ def check_npcap():
     """Check if Npcap is installed (Windows only)"""
     return DependencyChecker()._check_npcap()
 
-
 def check_system_requirements():
     """Check system requirements and dependencies"""
     checker = DependencyChecker()

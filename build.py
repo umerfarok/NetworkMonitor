@@ -32,45 +32,42 @@ def check_environment() -> bool:
         print("pip install -r requirements-build.txt")
         return False
 
-def get_platform_settings():
-    """Get platform-specific build settings"""
-    system = platform.system().lower()
+def create_spec_file():
+    """Create PyInstaller spec file based on platform"""
+    print("Generating platform-specific spec file...")
     
-    # Base settings common to all platforms
+    is_windows = platform.system() == "Windows"
+    is_macos = platform.system() == "Darwin"
+    
+    # Define settings for different platforms
     settings = {
-        'name': 'NetworkMonitor',
-        'console': True,
-        'debug': False,
-        'noconfirm': True,
-        'clean': True,
-        'icon_path': None,
-        'hiddenimports': []
+        'hiddenimports': [
+            'scapy.layers.all',
+            'engineio.async_drivers.threading',
+            'flask.cli',
+            'werkzeug.debug',
+            'werkzeug.serving'
+        ]
     }
     
-    # Platform-specific settings
-    if system == 'windows':
-        settings.update({
-            'icon_path': 'assets/icon.ico',
-            'uac_admin': True,
-            'hiddenimports': ['win32com', 'win32com.shell', 'win32api', 'wmi']
-        })
-    elif system == 'darwin':
-        settings['icon_path'] = 'assets/icon.icns'
-    elif system == 'linux':
-        settings['icon_path'] = 'assets/icon.ico'
+    # Common data files
+    datas = [
+        ('assets/*', 'assets')
+    ]
     
-    return settings
-
-def create_spec_file(settings) -> bool:
-    """Create PyInstaller spec file based on platform"""
-    try:
-        # Convert settings to spec file content
-        spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
+    icon_path = 'assets/icon.ico' if is_windows else 'assets/icon.icns' if is_macos else None
+    
+    # Create spec file content
+    spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
 
 block_cipher = None
 
+# Get absolute paths
+root_dir = os.path.dirname(os.path.abspath(SPECPATH))
+assets_dir = os.path.join(root_dir, 'assets')
+
 a = Analysis(
-    ['networkmonitor/scripts/networkmonitor_cli.py'],
+    ['networkmonitor/cli.py'],
     pathex=[],
     binaries=[],
     datas=[
@@ -97,63 +94,101 @@ exe = EXE(
     name='NetworkMonitor',
     debug=False,
     bootloader_ignore_signals=False,
-    upx=False,
-    runtime_tmpdir=None,
+    strip=False,
+    upx=True,"""
+
+    if icon_path:
+        spec_content += f"""
+    icon=['{icon_path}'],"""
+
+    if is_macos:
+        spec_content += """
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=True,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    info_plist={
+        'CFBundleShortVersionString': '1.0.0',
+        'CFBundleVersion': '1.0.0',
+        'CFBundleIdentifier': 'com.networkmonitor.app',
+        'CFBundleName': 'NetworkMonitor',
+        'CFBundleDisplayName': 'NetworkMonitor',
+        'CFBundlePackageType': 'APPL',
+        'CFBundleSignature': '????',
+        'LSMinimumSystemVersion': '10.13',
+        'NSHighResolutionCapable': True,
+    }
+)"""
+    elif is_windows:
+        spec_content += """
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
-    entitlements_file=None"""
-            
-        # Add icon if available
-        if settings.get('icon_path'):
-            spec_content += f",\n    icon=['{settings['icon_path']}']"
-            
-        spec_content += "\n)"
+    entitlements_file=None,
+    uac_admin=True,
+    version='file_version_info.txt'
+)"""
+    else:  # Linux
+        spec_content += """
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+)"""
+
+    if is_macos:
+        spec_content += """
+app = BUNDLE(
+    exe,
+    name='NetworkMonitor.app',
+    icon='assets/icon.icns',
+    bundle_identifier='com.networkmonitor.app',
+    info_plist={
+        'CFBundleShortVersionString': '1.0.0',
+        'CFBundleVersion': '1.0.0',
+        'CFBundleIdentifier': 'com.networkmonitor.app',
+        'CFBundleName': 'NetworkMonitor',
+        'CFBundleDisplayName': 'NetworkMonitor',
+        'CFBundlePackageType': 'APPL',
+        'CFBundleSignature': '????',
+        'LSMinimumSystemVersion': '10.13',
+        'NSHighResolutionCapable': True,
+    }
+)"""
+
+    with open('NetworkMonitor.spec', 'w') as f:
+        f.write(spec_content)
+    
+    print("Generated NetworkMonitor.spec file")
+
+def build_executable():
+    """Build the executable using PyInstaller with size optimizations"""
+    if not check_environment():
+        return False
         
-        # Write spec file
-        with open('NetworkMonitor.spec', 'w', encoding='utf-8') as f:
-            f.write(spec_content)
-            
-        print("Generated NetworkMonitor.spec file with platform-specific settings\n")
+    # Clean previous builds
+    clean_build()
+    
+    try:
+        # Create spec file if it doesn't exist
+        if not os.path.exists('NetworkMonitor.spec'):
+            create_spec_file()
+        
+        print("\nBuilding executable with optimized settings...")
+        PyInstaller.__main__.run([
+            'NetworkMonitor.spec',
+            '--clean',
+            '--noconfirm'
+        ])
+        
+        print("\nBuild completed successfully!")
         return True
         
-    except Exception as e:
-        print(f"Error creating spec file: {e}")
-        return False
-
-def build_executable() -> bool:
-    """Build the executable using PyInstaller"""
-    try:
-        # Clean previous build
-        clean_build()
-        
-        # Get platform-specific settings
-        settings = get_platform_settings()
-        
-        # Create spec file
-        if not create_spec_file(settings):
-            return False
-        
-        print("Building executable with optimized settings...")
-        pyinstaller_args = [
-            sys.executable,
-            '-m',
-            'PyInstaller',
-            'NetworkMonitor.spec',
-            '--noconfirm'
-        ]
-
-        result = subprocess.run(pyinstaller_args, check=True)
-        return result.returncode == 0
-        
-    except subprocess.CalledProcessError as e:
-        print(f"PyInstaller build failed with return code {e.returncode}")
-        if hasattr(e, 'stderr') and e.stderr:
-            print("Error output:")
-            print(e.stderr.decode() if isinstance(e.stderr, bytes) else e.stderr)
-        return False
     except Exception as e:
         print(f"Error during build: {e}")
         print("\nTroubleshooting tips:")

@@ -225,7 +225,17 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         cd dist
-        zip -r ${{ env.MACOS_APP_NAME }}-${{ steps.get_version.outputs.version }}.zip NetworkMonitor.app
+        if [ -d "NetworkMonitor.app" ]; then
+          # Package app bundle if it exists
+          zip -r ${{ env.MACOS_APP_NAME }}-${{ steps.get_version.outputs.version }}.zip NetworkMonitor.app
+        elif [ -f "NetworkMonitor" ]; then
+          # Package binary if app bundle doesn't exist
+          zip -r ${{ env.MACOS_APP_NAME }}-${{ steps.get_version.outputs.version }}.zip NetworkMonitor
+        else
+          echo "No build artifacts found in dist directory"
+          ls -la
+          exit 1
+        fi
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
