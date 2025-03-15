@@ -400,11 +400,27 @@ jobs:
         
         mkdocs build
     
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v4
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3  # Changed from v4 to v3
       with:
         path: site
+        retention-days: 30  # Added retention period
     
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
