@@ -37,29 +37,33 @@ jobs:
         
       - name: Build documentation
         run: |
-          mkdir -p docs/downloads
-          cp README.md docs/index.md
-          cp DEVELOPER.md docs/guide/developer.md
+          # Create all required directories first
+          mkdir -p docs/{guide,downloads}
           
-          # Create downloads page with version info
+          # Create index from README
+          cp README.md docs/index.md || echo "# NetworkMonitor" > docs/index.md
+          
+          # Copy or create developer guide
+          cp DEVELOPER.md docs/guide/developer.md || echo "# Developer Guide" > docs/guide/developer.md
+          
+          # Get version info
+          if [ -n "${{ github.event.release.tag_name }}" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            DATE=$(date -d "${{ github.event.release.published_at }}" +%Y-%m-%d)
+          else
+            # Fetch latest release info
+            LATEST_RELEASE=$(curl -s -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+            VERSION=$(echo "$LATEST_RELEASE" | jq -r .tag_name)
+            DATE=$(echo "$LATEST_RELEASE" | jq -r .published_at | cut -d'T' -f1)
+          fi
+          
           cat > docs/downloads/index.md << 'EOL'
           # Downloads
           
           ## Latest Release
           EOL
-          
-          # Get latest release info using GitHub API
-          if [ -n "${{ github.event.release.tag_name }}" ]; then
-            # Use the current release info if this is a release event
-            VERSION="${{ github.event.release.tag_name }}"
-            DATE=$(date -d "${{ github.event.release.published_at }}" +%Y-%m-%d)
-          else
-            # Otherwise fetch latest release info
-            LATEST_RELEASE=$(curl -s -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/latest")
-            VERSION=$(echo "$LATEST_RELEASE" | jq -r .tag_name)
-            DATE=$(echo "$LATEST_RELEASE" | jq -r .published_at | cut -d'T' -f1)
-          fi
           
           cat >> docs/downloads/index.md << EOL
           

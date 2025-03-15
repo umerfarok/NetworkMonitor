@@ -564,4 +564,37 @@ Critical packages:
 
 # Developer Documentation
 
-[Copy content from your existing DEVELOPER.md or create a basic guide]
+# Developer Guide
+
+## Setup Development Environment
+
+1. Prerequisites:
+   - Python 3.9 or later
+   - Npcap (Windows only)
+   - Git
+
+2. Clone and Setup:
+   ```bash
+   git clone https://github.com/umerfarok/netmoniter.git
+   cd netmoniter
+   python -m venv venv
+   source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+   pip install -r requirements.txt
+   pip install -r requirements-build.txt
+   ```
+
+## Building
+
+```bash
+python build.py
+```
+
+## Testing
+
+```bash
+python -m pytest tests/
+```
+
+## Contributing
+
+See CONTRIBUTING.md for guidelines.
