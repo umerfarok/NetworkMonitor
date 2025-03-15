@@ -297,12 +297,25 @@ jobs:
       contents: read
       pages: write
       id-token: write
+      actions: write  # Add this permission
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Enable GitHub Pages
+      run: |
+        # Enable via API
+        curl -L \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          https://api.github.com/repos/${{ github.repository }}/pages \
+          -d '{"source":{"branch":"gh-pages","path":"/"}}'
+      continue-on-error: true  # Continue even if already enabled
     
     - name: Setup Python
       uses: actions/setup-python@v5
@@ -409,18 +422,9 @@ jobs:
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-      
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        artifact_name: github-pages
+        preview: false
+        error_count: 3  # Number of retries
+        timeout: 600000  # 10 minutes timeout
