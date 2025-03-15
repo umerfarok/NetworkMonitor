@@ -175,6 +175,21 @@ def build_executable():
     clean_build()
     
     try:
+        # Verify PyInstaller is available
+        try:
+            import PyInstaller.__main__
+        except ImportError:
+            print("Error: PyInstaller not found. Installing required build dependencies...")
+            subprocess.check_call([
+                sys.executable, 
+                "-m", 
+                "pip", 
+                "install", 
+                "-r", 
+                "requirements-build.txt"
+            ])
+            import PyInstaller.__main__
+            
         # Create spec file if it doesn't exist
         if not os.path.exists('NetworkMonitor.spec'):
             create_spec_file()
