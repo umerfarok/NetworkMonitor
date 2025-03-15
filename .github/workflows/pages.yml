@@ -37,44 +37,45 @@ jobs:
         
       - name: Build documentation
         run: |
-          # Create directories
+          # Create directories and copy docs
           mkdir -p docs/{guide,downloads}
-          
-          # Copy docs
           cp README.md docs/index.md || echo "# NetworkMonitor" > docs/index.md
           cp DEVELOPER.md docs/guide/developer.md || echo "# Developer Guide" > docs/guide/developer.md
-          
-          # Get release info using GitHub API with authentication
-          LATEST_RELEASE=$(curl -s \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/latest")
-          
-          # Extract version and date, fallback to defaults if not found
-          VERSION=$(echo "$LATEST_RELEASE" | jq -r '.tag_name // "0.1.0"' | sed 's/^v//')
-          DATE=$(echo "$LATEST_RELEASE" | jq -r '.published_at // ""' | cut -d'T' -f1)
-          
-          if [ -z "$DATE" ]; then
-            DATE=$(date +%Y-%m-%d)
-          fi
-          
+
+          # Get current artifacts naming from CI workflow
+          REPO="${{ github.repository }}"
+          BASE_URL="https://github.com/${REPO}/releases/latest/download"
+
           cat > docs/downloads/index.md << EOL
           # Downloads
           
-          ## Latest Release (v${VERSION})
+          ## Latest Release
           
-          Released: ${DATE}
-          
-          ### Windows
-          - [NetworkMonitor Setup (Installer)](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows.zip)
-          - [NetworkMonitor Portable](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-Setup.zip)
-          
-          ### Linux
-          - [NetworkMonitor for Linux](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Linux.tar.gz)
-          
-          ### macOS
-          - [NetworkMonitor for macOS](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-macOS.zip)
-          
+          ### Download Stable Release
+
+          Latest stable builds from our releases:
+
+          #### Windows
+          - [Windows Installer (64-bit)](${BASE_URL}/Windows-artifacts.zip)
+
+          #### Linux
+          - [Linux Build](${BASE_URL}/Linux-artifacts.zip)
+
+          #### macOS
+          - [macOS Build](${BASE_URL}/macOS-artifacts.zip)
+
+          ### Development Builds
+
+          You can also get the latest development builds directly from our CI:
+
+          1. Go to [Actions](https://github.com/${REPO}/actions/workflows/ci.yml)
+          2. Click on the latest successful workflow run
+          3. Scroll down to "Artifacts"
+          4. Download the appropriate artifact for your platform:
+             - \`Windows-artifacts.zip\` for Windows
+             - \`Linux-artifacts.zip\` for Linux
+             - \`macOS-artifacts.zip\` for macOS
+
           ## System Requirements
           
           ### Windows
