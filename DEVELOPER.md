@@ -185,7 +185,7 @@ run_networkmonitor.bat
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourorg/networkmonitor.git
+git clone https://github.com/umerfarok/networkmonitor.git
 cd networkmonitor
 ```
 
