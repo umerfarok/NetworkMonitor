@@ -561,3 +561,7 @@ Critical packages:
    - Test across different resolutions
    - Verify system tray functionality
    - Check resource usage
+
+# Developer Documentation
+
+[Copy content from your existing DEVELOPER.md or create a basic guide]

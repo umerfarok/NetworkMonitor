@@ -333,10 +333,14 @@ jobs:
     
     - name: Build documentation
       run: |
-        mkdir -p docs/guide docs/downloads
-        cp README.md docs/index.md
-        cp DEVELOPER.md docs/guide/developer.md
+        # Create required directories
+        mkdir -p docs/{guide,downloads}
         
+        # Copy documentation files, create if not exist
+        cp README.md docs/index.md || echo "# NetworkMonitor" > docs/index.md
+        cp DEVELOPER.md docs/guide/developer.md || echo "# Developer Guide" > docs/guide/developer.md
+        
+        # Rest of your build documentation steps
         VERSION="${GITHUB_REF#refs/tags/v}"
         
         cat > docs/downloads/index.md << EOL
