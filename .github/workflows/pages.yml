@@ -56,13 +56,13 @@ jobs:
           Latest stable builds from our releases:
 
           #### Windows
-          - [Windows Installer (64-bit)](${BASE_URL}/Windows-artifacts.zip)
+          - [Windows Installer (64-bit)](https://github.com/umerfarok/NetworkMonitor/releases)
 
           #### Linux
-          - [Linux Build](${BASE_URL}/Linux-artifacts.zip)
+          - [Linux Build](https://github.com/umerfarok/NetworkMonitor/releasesp)
 
           #### macOS
-          - [macOS Build](${BASE_URL}/macOS-artifacts.zip)
+          - [macOS Build](https://github.com/umerfarok/NetworkMonitor/releases)
 
           ### Development Builds
 
