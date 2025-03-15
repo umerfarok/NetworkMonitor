@@ -37,49 +37,43 @@ jobs:
         
       - name: Build documentation
         run: |
-          # Create all required directories first
+          # Create directories
           mkdir -p docs/{guide,downloads}
           
-          # Create index from README
+          # Copy docs
           cp README.md docs/index.md || echo "# NetworkMonitor" > docs/index.md
-          
-          # Copy or create developer guide
           cp DEVELOPER.md docs/guide/developer.md || echo "# Developer Guide" > docs/guide/developer.md
           
-          # Get version info
-          if [ -n "${{ github.event.release.tag_name }}" ]; then
-            VERSION="${{ github.event.release.tag_name }}"
-            DATE=$(date -d "${{ github.event.release.published_at }}" +%Y-%m-%d)
-          else
-            # Fetch latest release info
-            LATEST_RELEASE=$(curl -s -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/latest")
-            VERSION=$(echo "$LATEST_RELEASE" | jq -r .tag_name)
-            DATE=$(echo "$LATEST_RELEASE" | jq -r .published_at | cut -d'T' -f1)
+          # Get release info using GitHub API with authentication
+          LATEST_RELEASE=$(curl -s \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+          
+          # Extract version and date, fallback to defaults if not found
+          VERSION=$(echo "$LATEST_RELEASE" | jq -r '.tag_name // "0.1.0"' | sed 's/^v//')
+          DATE=$(echo "$LATEST_RELEASE" | jq -r '.published_at // ""' | cut -d'T' -f1)
+          
+          if [ -z "$DATE" ]; then
+            DATE=$(date +%Y-%m-%d)
           fi
           
-          cat > docs/downloads/index.md << 'EOL'
+          cat > docs/downloads/index.md << EOL
           # Downloads
           
-          ## Latest Release
-          EOL
+          ## Latest Release (v${VERSION})
           
-          cat >> docs/downloads/index.md << EOL
+          Released: ${DATE}
           
-          Version: ${VERSION} (Released: ${DATE})
+          ### Windows
+          - [NetworkMonitor Setup (Installer)](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows.zip)
+          - [NetworkMonitor Portable](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-Setup.zip)
           
-          ### Download Links
+          ### Linux
+          - [NetworkMonitor for Linux](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Linux.tar.gz)
           
-          #### Windows
-          - [NetworkMonitor Setup (Installer)](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-Setup-${VERSION#v}.zip)
-          - [NetworkMonitor Portable](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Windows-${VERSION#v}.zip)
-          
-          #### Linux
-          - [NetworkMonitor for Linux](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-Linux-${VERSION#v}.tar.gz)
-          
-          #### macOS
-          - [NetworkMonitor for macOS](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-macOS-${VERSION#v}.zip)
+          ### macOS
+          - [NetworkMonitor for macOS](https://github.com/${{ github.repository }}/releases/latest/download/NetworkMonitor-macOS.zip)
           
           ## System Requirements
           
