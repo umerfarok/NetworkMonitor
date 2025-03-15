@@ -1,7 +1,7 @@
 # NetworkMonitor
 
 A powerful network monitoring and analysis tool.
-https://umerfarok.github.io/netmoniter/
+https://umerfarok.github.io/NetworkMonitor
 
 ## Prerequisites
 
