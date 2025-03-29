@@ -426,5 +426,168 @@ class WindowsNetworkMonitor:
             return ctypes.windll.shell32.IsUserAnAdmin() != 0
         except Exception:
             return False
+    
+    def limit_device_speed(self, ip: str, limit_kbps: int) -> bool:
+        """
+        Limit device download/upload speed using Windows Firewall and QoS
+        
+        Args:
+            ip: IP address of device to limit
+            limit_kbps: Speed limit in Kbps
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        if not self.is_elevated():
+            self.logger.error("Admin privileges required to limit device speed")
+            return False
+            
+        try:
+            # Convert Kbps to bits per second (bps) for QoS
+            limit_bps = limit_kbps * 1000
+            
+            # Check if there's an existing rule
+            check_cmd = subprocess.run(
+                [self.netsh_path, "advfirewall", "firewall", "show", "rule", f"name=NetworkMonitor_Limit_{ip}"],
+                text=True,
+                capture_output=True,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            
+            # Delete any existing rule
+            if "No rules match the specified criteria" not in check_cmd.stdout:
+                subprocess.run(
+                    [self.netsh_path, "advfirewall", "firewall", "delete", "rule", f"name=NetworkMonitor_Limit_{ip}"],
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+            
+            # Create a new rule with QoS limitation
+            subprocess.run([
+                self.netsh_path, "advfirewall", "firewall", "add", "rule",
+                f"name=NetworkMonitor_Limit_{ip}",
+                "dir=in",
+                "action=allow",
+                f"remoteip={ip}",
+                "protocol=any",
+                f"qoslevel={limit_bps}"
+            ], creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            # Create outbound rule
+            subprocess.run([
+                self.netsh_path, "advfirewall", "firewall", "add", "rule",
+                f"name=NetworkMonitor_Limit_{ip}_out",
+                "dir=out",
+                "action=allow",
+                f"remoteip={ip}",
+                "protocol=any",
+                f"qoslevel={limit_bps}"
+            ], creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            self.logger.info(f"Speed limit of {limit_kbps} Kbps set for device {ip}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error limiting device speed: {e}")
+            return False
+    
+    def block_device(self, ip: str) -> bool:
+        """
+        Block a device on the network using Windows Firewall
+        
+        Args:
+            ip: IP address of device to block
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        if not self.is_elevated():
+            self.logger.error("Admin privileges required to block device")
+            return False
+            
+        try:
+            # Check if there's an existing rule
+            check_cmd = subprocess.run(
+                [self.netsh_path, "advfirewall", "firewall", "show", "rule", f"name=NetworkMonitor_Block_{ip}"],
+                text=True,
+                capture_output=True,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            
+            # Delete any existing rule
+            if "No rules match the specified criteria" not in check_cmd.stdout:
+                subprocess.run(
+                    [self.netsh_path, "advfirewall", "firewall", "delete", "rule", f"name=NetworkMonitor_Block_{ip}"],
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+            
+            # Create inbound block rule
+            subprocess.run([
+                self.netsh_path, "advfirewall", "firewall", "add", "rule",
+                f"name=NetworkMonitor_Block_{ip}",
+                "dir=in",
+                "action=block",
+                f"remoteip={ip}"
+            ], creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            # Create outbound block rule
+            subprocess.run([
+                self.netsh_path, "advfirewall", "firewall", "add", "rule",
+                f"name=NetworkMonitor_Block_{ip}_out",
+                "dir=out",
+                "action=block",
+                f"remoteip={ip}"
+            ], creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            self.logger.info(f"Device {ip} blocked")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error blocking device: {e}")
+            return False
+    
+    def unblock_device(self, ip: str) -> bool:
+        """
+        Unblock a previously blocked device
+        
+        Args:
+            ip: IP address of device to unblock
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        if not self.is_elevated():
+            self.logger.error("Admin privileges required to unblock device")
+            return False
+            
+        try:
+            # Remove inbound block rule
+            subprocess.run([
+                self.netsh_path, "advfirewall", "firewall", "delete", "rule",
+                f"name=NetworkMonitor_Block_{ip}"
+            ], creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            # Remove outbound block rule
+            subprocess.run([
+                self.netsh_path, "advfirewall", "firewall", "delete", "rule",
+                f"name=NetworkMonitor_Block_{ip}_out"
+            ], creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            # Also remove any speed limiting rules
+            try:
+                subprocess.run([
+                    self.netsh_path, "advfirewall", "firewall", "delete", "rule",
+                    f"name=NetworkMonitor_Limit_{ip}"
+                ], creationflags=subprocess.CREATE_NO_WINDOW)
+                
+                subprocess.run([
+                    self.netsh_path, "advfirewall", "firewall", "delete", "rule",
+                    f"name=NetworkMonitor_Limit_{ip}_out"
+                ], creationflags=subprocess.CREATE_NO_WINDOW)
+            except:
+                pass
+                
+            self.logger.info(f"Device {ip} unblocked")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error unblocking device: {e}")
+            return False
 
 

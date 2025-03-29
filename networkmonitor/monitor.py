@@ -14,31 +14,49 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 
+# Setup early logging
+logger = logging.getLogger(__name__)
+
 # Import platform-specific modules
-if platform.system() == "Windows":
-    from .npcap_helper import initialize_npcap, verify_npcap_installation
-    from .windows import WindowsNetworkMonitor
-    import ctypes
-    import winreg
-elif platform.system() == "Darwin":  # macOS
-    try:
-        from .macos import MacOSNetworkMonitor
-    except ImportError:
-        logging.warning("Could not import macOS-specific functionality")
-elif platform.system() == "Linux":  # Linux/Ubuntu
-    try:
-        from .linux import LinuxNetworkMonitor
-    except ImportError:
-        logging.warning("Could not import Linux-specific functionality")
+_platform_modules_imported = False
+try:
+    if platform.system() == "Windows":
+        from .npcap_helper import initialize_npcap, verify_npcap_installation
+        from .windows import WindowsNetworkMonitor
+        import ctypes
+        import winreg
+        _platform_modules_imported = True
+    elif platform.system() == "Darwin":  # macOS
+        try:
+            from .macos import MacOSNetworkMonitor
+            _platform_modules_imported = True
+        except ImportError:
+            logger.warning("Could not import macOS-specific functionality")
+    elif platform.system() == "Linux":  # Linux/Ubuntu
+        try:
+            from .linux import LinuxNetworkMonitor
+            _platform_modules_imported = True
+        except ImportError:
+            logger.warning("Could not import Linux-specific functionality")
+    
+    if not _platform_modules_imported:
+        logger.warning("No platform-specific modules could be imported. Using generic implementations.")
+        
+except Exception as e:
+    logger.error(f"Error importing platform-specific modules: {e}")
+    logger.warning("Using generic implementations for network monitoring")
 
 # Import Scapy modules after Npcap setup
-from scapy.all import ARP, Ether, srp, send
 try:
-    from scapy.arch import get_if_hwaddr
-    from scapy.layers.l2 import arping
-    from scapy.sendrecv import srloop
-except ImportError as e:
-    logging.error(f"Failed to import Scapy modules: {e}")
+    from scapy.all import ARP, Ether, srp, send
+    try:
+        from scapy.arch import get_if_hwaddr
+        from scapy.layers.l2 import arping
+        from scapy.sendrecv import srloop
+    except ImportError as e:
+        logger.error(f"Failed to import Scapy modules: {e}")
+except ImportError:
+    logger.error("Failed to import Scapy. Some features will not be available.")
 
 @dataclass
 class Device:
