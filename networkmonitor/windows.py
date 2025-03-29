@@ -392,7 +392,7 @@ class WindowsNetworkMonitor:
         try:
             output = subprocess.check_output(
                 f"tracert -d -h 15 -w 500 {target_ip}",
-                shell=True,
+                shell=True, 
                 text=True
             )
             

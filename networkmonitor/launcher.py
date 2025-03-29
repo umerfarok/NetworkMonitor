@@ -11,12 +11,19 @@ import webbrowser
 import logging
 import traceback
 import tempfile
-import ctypes
 import requests
 import socket
 import tkinter as tk
 from pathlib import Path
 from .dependency_check import check_system_requirements
+
+# Import OS-specific functions
+if platform.system() == "Windows":
+    import ctypes
+elif platform.system() == "Darwin":  # macOS
+    pass  # macOS-specific imports will be added here if needed
+elif platform.system() == "Linux":  # Linux
+    pass  # Linux-specific imports will be added here if needed
 
 # Setup consistent logging across all modules
 def setup_logging():
@@ -28,10 +35,12 @@ def setup_logging():
         # We're running in a normal Python environment
         base_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Setup log directory
+    # Setup log directory based on OS
     if platform.system() == 'Windows':
         log_dir = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'NetworkMonitor', 'logs')
-    else:
+    elif platform.system() == 'Darwin':  # macOS
+        log_dir = os.path.join(os.path.expanduser('~'), 'Library', 'Logs', 'NetworkMonitor')
+    else:  # Linux/Ubuntu
         log_dir = os.path.join(os.path.expanduser('~'), '.networkmonitor', 'logs')
 
     os.makedirs(log_dir, exist_ok=True)
@@ -80,11 +89,20 @@ logger.info(f"Working directory: {os.getcwd()}")
 logger.info(f"Log file: {log_file}")
 
 def is_admin():
-    """Check if the application is running with admin privileges"""
+    """Check if the application is running with admin/root privileges"""
     try:
         if platform.system() == "Windows":
             return ctypes.windll.shell32.IsUserAnAdmin() != 0
-        else:
+        elif platform.system() == "Darwin":  # macOS
+            # Check if user can run sudo without password
+            import subprocess
+            result = subprocess.run(
+                ["sudo", "-n", "true"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            return result.returncode == 0
+        else:  # Linux/Ubuntu
             return os.geteuid() == 0
     except Exception as e:
         logger.error(f"Error checking admin privileges: {e}")
@@ -100,9 +118,17 @@ def restart_as_admin():
             logger.error(f"Failed to restart as admin: {e}")
             print(f"Error requesting admin privileges: {e}")
         sys.exit()
-    else:
-        # For Linux/Mac, suggest using sudo
-        print("Please run this application with sudo privileges")
+    elif platform.system() == "Darwin":  # macOS
+        # For macOS, prompt to run with sudo
+        print("\nNetworkMonitor requires administrator privileges.")
+        print("Please run the application with 'sudo' prefix.\n")
+        print(f"Example:  sudo {sys.executable} {' '.join(sys.argv)}\n")
+        sys.exit(1)
+    else:  # Linux/Ubuntu
+        # For Linux, prompt to run with sudo
+        print("\nNetworkMonitor requires root privileges.")
+        print("Please run the application with 'sudo' prefix.\n")
+        print(f"Example:  sudo {sys.executable} {' '.join(sys.argv)}\n")
         sys.exit(1)
 
 def is_port_in_use(port, host='127.0.0.1'):
@@ -784,6 +810,73 @@ def main():
         splash.show()  # Show splash screen
         logger.info("Running with admin privileges")
         splash.update_status("Checking admin privileges", 10)
+        
+        # Check OS-specific requirements
+        platform_name = platform.system()
+        if platform_name == "Windows":
+            # Windows-specific checks
+            from .npcap_helper import initialize_npcap, get_npcap_info
+            npcap_info = get_npcap_info()
+            if not npcap_info['installed']:
+                error_msg = "Npcap is required but not installed. Please install from https://npcap.com"
+                logger.error(error_msg)
+                splash.update_status(error_msg, 100)
+                time.sleep(3)
+                return 1
+            
+            # Initialize Npcap
+            if not initialize_npcap():
+                error_msg = "Failed to initialize Npcap. Please reinstall or check installation."
+                logger.error(error_msg)
+                splash.update_status(error_msg, 100)
+                time.sleep(3)
+                return 1
+                
+            splash.update_status("Npcap initialized successfully", 30)
+            
+        elif platform_name == "Darwin":  # macOS
+            # macOS-specific checks
+            splash.update_status("Checking macOS requirements", 30)
+            # Check if pfctl is available
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ["pfctl", "-h"],
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE
+                )
+                if result.returncode != 0 and result.returncode != 1:
+                    logger.warning("pfctl command not available, some features may not work")
+            except Exception:
+                logger.warning("Could not check for pfctl, some features may not work")
+            
+        elif platform_name == "Linux":  # Linux
+            # Ubuntu/Linux-specific checks
+            splash.update_status("Checking Linux requirements", 30)
+            # Check for iptables
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ["iptables", "--version"],
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE
+                )
+                if result.returncode != 0:
+                    logger.warning("iptables command not available, some features may not work")
+            except Exception:
+                logger.warning("Could not check for iptables, some features may not work")
+            
+            # Check for tc
+            try:
+                result = subprocess.run(
+                    ["tc", "--version"],
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE
+                )
+                if result.returncode != 0:
+                    logger.warning("tc command not available, some features may not work")
+            except Exception:
+                logger.warning("Could not check for tc command, some features may not work")
         
         # Default settings
         host = '127.0.0.1'

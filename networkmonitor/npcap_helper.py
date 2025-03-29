@@ -217,7 +217,7 @@ def download_npcap_installer(output_path=None) -> Optional[str]:
     Args:
         output_path: Optional path to save the installer
         
-    Returns:
+    Returns: 
         str: Path to downloaded installer, or None if download failed
     """
     if not output_path:

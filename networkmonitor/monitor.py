@@ -14,11 +14,22 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 
-# Import the Npcap helper for Windows
+# Import platform-specific modules
 if platform.system() == "Windows":
     from .npcap_helper import initialize_npcap, verify_npcap_installation
+    from .windows import WindowsNetworkMonitor
     import ctypes
     import winreg
+elif platform.system() == "Darwin":  # macOS
+    try:
+        from .macos import MacOSNetworkMonitor
+    except ImportError:
+        logging.warning("Could not import macOS-specific functionality")
+elif platform.system() == "Linux":  # Linux/Ubuntu
+    try:
+        from .linux import LinuxNetworkMonitor
+    except ImportError:
+        logging.warning("Could not import Linux-specific functionality")
 
 # Import Scapy modules after Npcap setup
 from scapy.all import ARP, Ether, srp, send
@@ -64,7 +75,9 @@ class NetworkController:
         self._gateway_mac = None
         self._gateway_ip = None
         
-        # Initialize Windows system paths
+        # Initialize platform-specific monitors
+        self.platform_monitor = None
+        
         if self.os_type == "Windows":
             # Setup Windows command paths
             system32 = os.path.join(os.environ['SystemRoot'], 'System32')
@@ -74,20 +87,32 @@ class NetworkController:
             self.ping_path = os.path.join(system32, "ping.exe")
             
             try:
-                from .windows import WindowsNetworkMonitor
-                self.windows_monitor = WindowsNetworkMonitor()
+                self.platform_monitor = WindowsNetworkMonitor()
                 logging.info("Windows network monitor initialized")
-            except Exception as e:
-                logging.error(f"Failed to initialize Windows network monitor: {e}")
-                self.windows_monitor = None
-
-            try:
+                
                 if not initialize_npcap():
                     logging.warning("Npcap initialization failed, network monitoring may not work")
                 else:
                     logging.info("Npcap initialized successfully")
             except Exception as e:
-                logging.error(f"Error initializing Npcap: {e}")
+                logging.error(f"Failed to initialize Windows network monitor: {e}")
+                self.platform_monitor = None
+                
+        elif self.os_type == "Darwin":  # macOS
+            try:
+                self.platform_monitor = MacOSNetworkMonitor()
+                logging.info("macOS network monitor initialized")
+            except Exception as e:
+                logging.error(f"Failed to initialize macOS network monitor: {e}")
+                self.platform_monitor = None
+                
+        elif self.os_type == "Linux":  # Linux/Ubuntu
+            try:
+                self.platform_monitor = LinuxNetworkMonitor()
+                logging.info("Linux network monitor initialized")
+            except Exception as e:
+                logging.error(f"Failed to initialize Linux network monitor: {e}")
+                self.platform_monitor = None
                 
         # Initialize measurement variables
         self.last_measurement_time = time.time()
@@ -151,6 +176,7 @@ class NetworkController:
                             self._gateway_mac = parts[1].replace('-', ':').upper()
                             break
                             
+
         except Exception as e:
             logging.error(f"Error getting gateway info: {e}")
             return None, None
@@ -222,7 +248,7 @@ class NetworkController:
                     gateway_ip, gateway_mac = self._get_gateway_info()
                     if not gateway_ip or not gateway_mac:
                         return
-                    
+                        
                     # Get our interface MAC
                     iface = self.get_default_interface()
                     our_mac = get_if_hwaddr(iface)
@@ -284,46 +310,46 @@ class NetworkController:
 
     def get_interfaces(self) -> List[Dict]:
         """Get all network interfaces"""
-        interfaces = []
-        stats = psutil.net_if_stats()
-        addrs = psutil.net_if_addrs()
-        
-        for interface, stat in stats.items():
-            if stat.isup:
-                for addr in addrs.get(interface, []):
-                    if addr.family == socket.AF_INET:
-                        interfaces.append({
-                            'name': interface,
-                            'ip': addr.address,
-                            'network_mask': addr.netmask,
-                            'stats': stat
-                        })
-        return interfaces
+        try:
+            # Use platform-specific implementation if available
+            if self.platform_monitor and hasattr(self.platform_monitor, 'get_interfaces'):
+                return self.platform_monitor.get_interfaces()
+                
+            # Generic fallback implementation using psutil
+            interfaces = []
+            stats = psutil.net_if_stats()
+            addrs = psutil.net_if_addrs()
+            
+            for interface, stat in stats.items():
+                if stat.isup:
+                    for addr in addrs.get(interface, []):
+                        if addr.family == socket.AF_INET:
+                            interfaces.append({
+                                'name': interface,
+                                'ip': addr.address,
+                                'network_mask': addr.netmask,
+                                'stats': stat
+                            })
+            return interfaces
+        except Exception as e:
+            logging.error(f"Error getting interfaces: {e}")
+            return []
 
     def get_wifi_interfaces(self) -> List[str]:
         """Get list of WiFi interfaces"""
         try:
+            # Use platform-specific implementation if available
+            if self.platform_monitor and hasattr(self.platform_monitor, 'get_wifi_interfaces'):
+                interfaces = self.platform_monitor.get_wifi_interfaces()
+                if interfaces:
+                    # Check if interfaces is a list of dictionaries or strings
+                    if interfaces and isinstance(interfaces[0], dict):
+                        return [iface.get('name', iface.get('device', '')) for iface in interfaces]
+                    return interfaces
+            
+            # Generic fallback detection logic
             if self.os_type == "Windows":
-                # Check if we have admin rights
-                is_admin = False
-                try:
-                    is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
-                except:
-                    pass
-
-                if not is_admin:
-                    logging.warning("Not running with admin privileges - some WiFi features may be limited")
-
-                # Try Windows monitor first
-                if hasattr(self, 'windows_monitor'):
-                    try:
-                        interfaces = self.windows_monitor.get_wifi_interfaces()
-                        if interfaces:
-                            return [iface['name'] for iface in interfaces if iface.get('state', '').lower() == 'connected']
-                    except Exception as e:
-                        logging.debug(f"Windows monitor WiFi detection failed: {e}")
-
-                # Fallback to direct ipconfig parsing
+                # Windows detection logic
                 output = subprocess.check_output([self.ipconfig_path], 
                                               text=True, 
                                               creationflags=subprocess.CREATE_NO_WINDOW)
@@ -344,9 +370,7 @@ class NetworkController:
                             wifi_interfaces.append(current_interface)
                             current_interface = None
 
-                # If we found WiFi interfaces through ipconfig, use those
                 if wifi_interfaces:
-                    logging.info(f"Found WiFi interfaces through ipconfig: {wifi_interfaces}")
                     return wifi_interfaces
 
                 # Last resort: try to find any interface with "WiFi" or "Wireless" in the name
@@ -357,291 +381,35 @@ class NetworkController:
                           for wifi_term in ['wifi', 'wireless', 'wlan'])
                 ]
                 if wifi_candidates:
-                    logging.info(f"Found WiFi interfaces by name: {wifi_candidates}")
                     return wifi_candidates
-                    
                 return []
-                
-            # Linux/MacOS code
-            interfaces = self.get_interfaces()
-            return [interface['name'] for interface in interfaces 
-                   if interface['name'].startswith(('wlan', 'wifi', 'wi-fi', 'wl', 'wpl'))]
+
+            elif self.os_type == "Darwin":  # macOS
+                # Try to find interfaces with Airport/Wi-Fi in the name
+                all_interfaces = self.get_interfaces()
+                return [interface['name'] for interface in all_interfaces 
+                       if any(term in interface['name'].lower() 
+                             for term in ['wifi', 'airport', 'wi-fi', 'wireless'])]
+                       
+            elif self.os_type == "Linux":  # Linux
+                # Look for wlan interfaces
+                all_interfaces = self.get_interfaces()
+                return [interface['name'] for interface in all_interfaces 
+                       if interface['name'].startswith(('wlan', 'wifi', 'wi-fi', 'wl'))]
                    
         except Exception as e:
             logging.error(f"Error getting WiFi interfaces: {e}")
             return []
-
-    def get_default_interface(self) -> str:
-        """Get default network interface"""
-        try:
-            # Use psutil to find the default interface
-            stats = psutil.net_if_stats()
-            for interface, stat in stats.items():
-                if stat.isup and interface != 'lo':
-                    addrs = psutil.net_if_addrs()[interface]
-                    for addr in addrs:
-                        if addr.family == socket.AF_INET and not addr.address.startswith('127.'):
-                            return interface
-        except Exception as e:
-            logging.error(f"Error getting default interface: {e}")
-        return None
-
-    def get_interface_ip(self, interface: str) -> str:
-        """Get IP address for a network interface"""
-        try:
-            addrs = psutil.net_if_addrs().get(interface, [])
-            for addr in addrs:
-                if addr.family == socket.AF_INET:
-                    return addr.address
-        except Exception as e:
-            logging.error(f"Error getting interface IP: {e}")
-        return None
-
-    def get_connected_devices(self, interface: str = None) -> List[Device]:
-        """Scan network for connected devices"""
-        try:
-            if not interface:
-                interface = self.get_default_interface() 
-            
-            if not interface:
-                raise Exception("No valid network interface found")
-
-            # Get subnet for scanning
-            ip = self.get_interface_ip(interface)
-            if not ip:
-                raise Exception(f"Could not get IP for interface {interface}")
-
-            subnet = self.get_subnet(ip)
-            logging.info(f"Scanning subnet: {subnet}/24")
-
-            # Track current time and found devices
-            current_time = datetime.now()
-            devices_found = set()
-
-            # First, ensure we have gateway info
-            gateway_ip, gateway_mac = self._get_gateway_info()
-            if gateway_ip and gateway_mac:
-                devices_found.add(gateway_ip)
-                # Add gateway device
-                self.devices[gateway_ip] = Device(
-                    ip=gateway_ip,
-                    mac=gateway_mac,
-                    hostname="Network Router",
-                    vendor=self.get_vendor(gateway_mac),
-                    device_type="Router",
-                    last_seen=current_time,
-                    status="active"
-                )
-                logging.info(f"Gateway device found: {gateway_ip}")
-
-            # Add our own device
-            try:
-                our_mac = None
-                if self.os_type == "Windows":
-                    try:
-                        arp_output = subprocess.check_output([self.arp_path, "-a"], 
-                                                        text=True,
-                                                        creationflags=subprocess.CREATE_NO_WINDOW)
-                        for line in arp_output.splitlines():
-                            if ip in line:
-                                parts = line.split()
-                                if len(parts) >= 2:
-                                    our_mac = parts[1].replace('-', ':').upper()
-                                break
-                    except Exception as e:
-                        logging.warning(f"Could not get interface MAC: {e}")
-
-                hostname = socket.gethostname()
-                self.devices[ip] = Device(
-                    ip=ip,
-                    mac=our_mac,
-                    hostname=hostname,
-                    vendor=None,
-                    device_type="This Device",
-                    last_seen=current_time,
-                    status="active"
-                )
-                devices_found.add(ip)
-                logging.info(f"Added this device: {ip} ({hostname})")
-            except Exception as e:
-                logging.warning(f"Error adding own device: {e}")
-
-            # Use ARP scan for device discovery
-            try:
-                # Get initial ARP table
-                arp_output = subprocess.check_output([self.arp_path, "-a"], 
-                                                text=True,
-                                                creationflags=subprocess.CREATE_NO_WINDOW)
-                
-                # Process existing ARP entries first
-                for line in arp_output.splitlines():
-                    try:
-                        if "dynamic" in line.lower():
-                            parts = line.split()
-                            if len(parts) >= 2:
-                                ip_addr = parts[0].strip()
-                                mac_addr = parts[1].replace('-', ':').upper()
-                                
-                                if ip_addr not in devices_found and ip_addr != gateway_ip:
-                                    devices_found.add(ip_addr)
-                                    
-                                    # Get device details
-                                    hostname = None
-                                    socket.setdefaulttimeout(1)
-                                    try:
-                                        hostname = socket.getfqdn(ip_addr)
-                                        if hostname == ip_addr:
-                                            hostname = None
-                                    except:
-                                        pass
-                                    finally:
-                                        socket.setdefaulttimeout(None)
-
-                                    # Get vendor and other details
-                                    vendor = self.get_vendor(mac_addr)
-                                    signal_strength = self.get_signal_strength(mac_addr)
-                                    device_type = self.guess_device_type(hostname, vendor)
-
-                                    self.devices[ip_addr] = Device(
-                                        ip=ip_addr,
-                                        mac=mac_addr,
-                                        hostname=hostname,
-                                        vendor=vendor,
-                                        device_type=device_type,
-                                        signal_strength=signal_strength,
-                                        last_seen=current_time,
-                                        status="active"
-                                    )
-                                    logging.info(f"Found device from ARP: {ip_addr} ({hostname or 'unknown'})")
-                    except Exception as e:
-                        logging.debug(f"Error processing ARP line: {e}")
-                        continue
-
-                # Now send ARP requests to entire subnet to discover new devices
-                if self.os_type == "Windows":
-                    # Use ping sweep for Windows
-                    for last_octet in range(1, 255):
-                        target_ip = f"{subnet[:-1]}{last_octet}"
-                        if target_ip not in devices_found:
-                            try:
-                                subprocess.run(["ping", "-n", "1", "-w", "100", target_ip],
-                                            stdout=subprocess.DEVNULL,
-                                            stderr=subprocess.DEVNULL,
-                                            creationflags=subprocess.CREATE_NO_WINDOW)
-                            except:
-                                pass
-
-                    # Get updated ARP table after ping sweep
-                    time.sleep(0.5)  # Wait for ARP table to update
-                    arp_output = subprocess.check_output([self.arp_path, "-a"], 
-                                                    text=True,
-                                                    creationflags=subprocess.CREATE_NO_WINDOW)
-                    
-                    # Process new ARP entries
-                    for line in arp_output.splitlines():
-                        try:
-                            if "dynamic" in line.lower():
-                                parts = line.split()
-                                if len(parts) >= 2:
-                                    ip_addr = parts[0].strip()
-                                    mac_addr = parts[1].replace('-', ':').upper()
-                                    
-                                    if ip_addr not in devices_found and ip_addr != gateway_ip:
-                                        devices_found.add(ip_addr)
-                                        
-                                        # Get device details
-                                        hostname = None
-                                        socket.setdefaulttimeout(1)
-                                        try:
-                                            hostname = socket.getfqdn(ip_addr)
-                                            if hostname == ip_addr:
-                                                hostname = None
-                                        except:
-                                            pass
-                                        finally:
-                                            socket.setdefaulttimeout(None)
-
-                                        # Get vendor and other details
-                                        vendor = self.get_vendor(mac_addr)
-                                        signal_strength = self.get_signal_strength(mac_addr)
-                                        device_type = self.guess_device_type(hostname, vendor)
-
-                                        self.devices[ip_addr] = Device(
-                                            ip=ip_addr,
-                                            mac=mac_addr,
-                                            hostname=hostname,
-                                            vendor=vendor,
-                                            device_type=device_type,
-                                            signal_strength=signal_strength,
-                                            last_seen=current_time,
-                                            status="active"
-                                        )
-                                        logging.info(f"Found new device: {ip_addr} ({hostname or 'unknown'})")
-                        except Exception as e:
-                            logging.debug(f"Error processing ARP line: {e}")
-                            continue
-
-            except Exception as e:
-                logging.error(f"Error in network scan: {str(e)}")
-
-            # Update status of devices
-            for device_ip, device in list(self.devices.items()):
-                if device_ip in devices_found:
-                    device.status = "active"
-                    device.last_seen = current_time
-                elif (current_time - device.last_seen).total_seconds() > 300:  # 5 minutes timeout
-                    device.status = "inactive"
-
-            # Return only active devices
-            active_devices = [d for d in self.devices.values() if d.status == "active"]
-            logging.info(f"Scan complete. Found {len(active_devices)} active devices")
-            return active_devices
-
-        except Exception as e:
-            logging.error(f"Error in network scan: {str(e)}")
-            return [d for d in self.devices.values() if d.status == "active"]
-
-    def get_subnet(self, ip: str) -> str:
-        """Get subnet from IP address"""
-        try:
-            return '.'.join(ip.split('.')[:-1]) + '.0'
-        except Exception as e:
-            logging.error(f"Error getting subnet: {e}")
-            return None
-
-    def get_hostname(self, ip: str) -> Optional[str]:
-        """Get hostname for IP address"""
-        try:
-            hostname = socket.gethostbyaddr(ip)[0]
-            return hostname
-        except:
-            return None
-
-    def get_vendor(self, mac: str) -> Optional[str]:
-        """Get vendor from MAC address using macvendors.com API"""
-        try:
-            if mac in self.mac_vendor_cache:
-                return self.mac_vendor_cache[mac]
-
-            mac = mac.replace(':', '').upper()[:6]
-            response = requests.get(f'https://api.macvendors.com/{mac}')
-            
-            if response.status_code == 200:
-                vendor = response.text
-                self.mac_vendor_cache[mac] = vendor
-                return vendor
-        except:
-            pass
-        return None
-
+    
     def get_signal_strength(self, mac: str) -> Optional[int]:
         """Get WiFi signal strength for device"""
         try:
-            if self.os_type == "Windows" and self.windows_monitor:
-                signal_info = self.windows_monitor.get_wifi_signal_strength()
+            # Use platform-specific implementation if available
+            if self.platform_monitor and hasattr(self.platform_monitor, 'get_wifi_signal_strength'):
+                signal_info = self.platform_monitor.get_wifi_signal_strength()
                 # Look for the device MAC in any interface's info
                 for interface_info in signal_info.values():
-                    if interface_info.get('bssid', '').replace('-', ':').upper() == mac.upper():
+                    if isinstance(interface_info, dict) and interface_info.get('bssid', '').replace('-', ':').upper() == mac.upper():
                         return interface_info.get('signal_strength')
             return None
         except Exception as e:
@@ -742,13 +510,21 @@ class NetworkController:
     def limit_device_speed(self, ip, speed_limit):
         """Limit device speed (in Mbps)"""
         try:
-            # Implement speed limiting using `tc` command (Linux) or `netsh` (Windows)
+            # Use platform-specific implementation if available
+            if self.platform_monitor and hasattr(self.platform_monitor, 'limit_device_speed'):
+                return self.platform_monitor.limit_device_speed(ip, speed_limit * 1000)  # Convert to Kbps
+                
+            # Generic implementations based on OS type
             if self.os_type == "Windows":
-                # Windows implementation (simplified, may require admin privileges)
+                # Windows implementation (simplified, requires admin privileges)
                 command = f"netsh interface set interface {ip} throttled {speed_limit}"
                 subprocess.check_output(command, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
-            else:
-                # Linux implementation (simplified, may require sudo)
+            elif self.os_type == "Darwin":  # macOS
+                # macOS implementation using pfctl (simplified, requires admin/sudo)
+                command = f"echo \"pass out route-to (lo0 127.0.0.1) inet from any to {ip} no state\npass in route-to (lo0 127.0.0.1) inet from {ip} to any no state\" | sudo pfctl -ef -"
+                subprocess.check_output(command, shell=True)
+            else:  # Linux
+                # Linux implementation (simplified, requires sudo)
                 command = f"tc qdisc add dev {self.get_default_interface()} handle ffff: ingress; tc filter add dev {self.get_default_interface()} parent ffff: protocol ip handle 1 u32 match ip dst {ip} flowid 1:1; tc qdisc add dev {self.get_default_interface()} parent 1:1 handle 10: tbf rate {speed_limit}mbit burst 100kb latency 50ms"
                 subprocess.check_output(command, shell=True)
             return True
@@ -759,13 +535,21 @@ class NetworkController:
     def block_device(self, ip):
         """Block (Disconnect) a device"""
         try:
-            # Implement device blocking using `iptables` (Linux) or `netsh` (Windows)
+            # Use platform-specific implementation if available
+            if self.platform_monitor and hasattr(self.platform_monitor, 'block_device'):
+                return self.platform_monitor.block_device(ip)
+                
+            # Generic implementations based on OS type
             if self.os_type == "Windows":
-                # Windows implementation (simplified, may require admin privileges)
+                # Windows implementation (requires admin privileges)
                 command = f"netsh advfirewall firewall add rule name=Block_{ip} dir=in interface=any action=block remoteip={ip}"
                 subprocess.check_output(command, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
-            else:
-                # Linux implementation (simplified, may require sudo)
+            elif self.os_type == "Darwin":  # macOS
+                # macOS implementation using pfctl (requires admin/sudo)
+                command = f"echo \"block drop inet from any to {ip}\nblock drop inet from {ip} to any\" | sudo pfctl -ef -"
+                subprocess.check_output(command, shell=True)
+            else:  # Linux
+                # Linux implementation using iptables (requires sudo)
                 command = f"iptables -A INPUT -s {ip} -j DROP"
                 subprocess.check_output(command, shell=True)
             return True
@@ -773,14 +557,28 @@ class NetworkController:
             logging.error(f"Error blocking device: {e}")
             return False
 
-    def rename_device(self, ip, new_name):
-        """Rename a device (update hostname)"""
+    def unblock_device(self, ip):
+        """Unblock a previously blocked device"""
         try:
-            device = self.devices.get(ip)
-            if device:
-                device.hostname = new_name
-                return True
-            return False
+            # Use platform-specific implementation if available
+            if self.platform_monitor and hasattr(self.platform_monitor, 'unblock_device'):
+                return self.platform_monitor.unblock_device(ip)
+                
+            # Generic implementations based on OS type
+            if self.os_type == "Windows":
+                # Windows implementation (requires admin privileges)
+                command = f"netsh advfirewall firewall delete rule name=Block_{ip}"
+                subprocess.check_output(command, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            elif self.os_type == "Darwin":  # macOS
+                # macOS implementation (requires admin/sudo)
+                # This is simplified - would need to rewrite rules without the blocked IP
+                command = f"sudo pfctl -d"  # Disable firewall
+                subprocess.check_output(command, shell=True)
+            else:  # Linux
+                # Linux implementation (requires sudo)
+                command = f"iptables -D INPUT -s {ip} -j DROP"
+                subprocess.check_output(command, shell=True)
+            return True
         except Exception as e:
-            logging.error(f"Error renaming device: {e}")
+            logging.error(f"Error unblocking device: {e}")
             return False

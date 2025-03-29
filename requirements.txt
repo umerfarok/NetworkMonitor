@@ -13,3 +13,10 @@ Pillow>=10.0.0
 
 # Platform-specific dependencies
 pywin32>=223; sys_platform == "win32"  # Required for Windows system API access
+wmi>=1.5.1; sys_platform == "win32"  # Required for Windows device discovery
+
+# macOS specific dependencies
+netifaces>=0.11.0; sys_platform == "darwin"  # Network interface discovery for macOS
+
+# Linux/Ubuntu specific dependencies
+python-iptables>=1.0.0; sys_platform == "linux"  # For Linux firewall control
