@@ -46,7 +46,7 @@ class SplashScreen:
         
         # Apply styling
         self.root.configure(bg="#f0f0f0")
-        
+         
         # Create frame
         main_frame = ttk.Frame(self.root, padding=20)
         main_frame.pack(fill=tk.BOTH, expand=True)

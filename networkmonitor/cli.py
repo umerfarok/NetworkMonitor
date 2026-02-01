@@ -39,7 +39,7 @@ def start(host, port, check_only):
         # Keep the server running
         controller.wait_for_shutdown()
     except KeyboardInterrupt:
-        click.echo("\nShutting down...")
+        click.echo("\nShutting down...") 
         controller.stop_monitoring()
 
 @cli.command()
