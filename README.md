@@ -1,44 +1,55 @@
-# NetworkMonitor
+# 🌐 NetworkMonitor
 
-A powerful network monitoring and analysis tool.
-https://umerfarok.github.io/NetworkMonitor
+**A powerful network monitoring and control tool - Better than NetCut!**
 
-## Prerequisites
+[![Release](https://img.shields.io/github/v/release/umerfarok/networkmonitor?style=for-the-badge)](https://github.com/umerfarok/networkmonitor/releases)
+[![Downloads](https://img.shields.io/github/downloads/umerfarok/networkmonitor/total?style=for-the-badge)](https://github.com/umerfarok/networkmonitor/releases)
+[![License](https://img.shields.io/github/license/umerfarok/networkmonitor?style=for-the-badge)](LICENSE)
 
-Before installing NetworkMonitor, ensure you have the following prerequisites installed:
+📖 **Documentation**: [umerfarok.github.io/networkmonitor](https://umerfarok.github.io/networkmonitor)
 
-### System Requirements
-1. Windows 10 or later (64-bit)
-2. Python 3.9 or later
-   - Download from: https://python.org
-   - During installation, check "Add Python to PATH"
-3. Npcap (Windows only)
-   - Download from: https://npcap.com
-   - Install with "WinPcap API-compatible Mode" option
+---
 
-### Administrator Privileges
-NetworkMonitor requires administrator privileges to capture network traffic.
+## 🎯 One-Click Installation (Windows)
 
-## Features
+**Just download and run - everything is included!**
 
-- Modern dark-themed user interface
-- System tray support for background operation
-- Real-time network monitoring and analysis
-- Interactive status dashboard
-- One-click web interface access
-- Professional status indicators and notifications
-- Background operation support
+### [⬇️ Download NetworkMonitor Installer](https://github.com/umerfarok/networkmonitor/releases/latest)
 
-## Installation
+1. **Download** `NetworkMonitor-Windows-Setup-*.exe`
+2. **Double-click** to install (right-click → Run as administrator)
+3. **Done!** Dashboard opens automatically
 
-1. Download the latest NetworkMonitor installer from the releases page.
+> ✅ **No manual setup required!** The installer automatically installs:
+> - NetworkMonitor application
+> - Npcap driver (for network scanning)
+> - All required components
+> - Firewall rules
 
-2. Run the installer with administrator privileges.
+---
 
-3. After installation, open a command prompt with administrator privileges and install the required Python packages:
-   ```
-   pip install -r "C:\Program Files\NetworkMonitor\requirements.txt"
-   ```
+## 📱 Other Platforms
+
+| Platform | Download | Notes |
+|----------|----------|-------|
+| **Linux** | [Download](https://github.com/umerfarok/networkmonitor/releases/latest) | Run with `sudo ./NetworkMonitor` |
+| **macOS** | [Download](https://github.com/umerfarok/networkmonitor/releases/latest) | Run with `sudo ./NetworkMonitor` |
+
+> 📚 **Need help?** See [QUICK_START.md](QUICK_START.md) or [INSTALLATION.md](INSTALLATION.md)
+
+---
+
+## ✨ Features
+
+- 🖥️ **Device Discovery**: See all devices on your network
+- ✂️ **Network Cut/Restore**: Disconnect devices using ARP spoofing
+- 🔒 **Protection**: Protect devices from ARP attacks
+- ⚡ **Speed Limiting**: Control bandwidth per device
+- 📊 **Real-time Monitoring**: Live bandwidth and connection stats
+- 🌐 **Modern Web Dashboard**: Beautiful React-based UI
+- 🖱️ **Drag & Drop**: Easy device management
+- 💻 **Cross-Platform**: Windows, Linux, macOS support
+- ☁️ **Vercel Support**: Host dashboard in cloud, run backend locally
 
 ## Running NetworkMonitor
 
@@ -92,11 +103,79 @@ If you encounter issues:
 2. Open an issue on our GitHub repository
 3. Include error messages and logs when reporting issues
 
+## Quick Start (Easy Installation)
+
+1. **Download** NetworkMonitor to your computer
+
+2. **Run the installer** (as Administrator):
+   ```cmd
+   install.bat
+   ```
+
+3. **Start the application**:
+   ```cmd
+   start.bat
+   ```
+
+4. **Open your browser** and go to: http://localhost:5000
+
+That's it! The dashboard will show all devices on your network.
+
+## Using with Vercel (Cloud Dashboard)
+
+NetworkMonitor supports a **hybrid architecture** where the frontend is hosted on Vercel and connects to your local backend:
+
+### How it Works
+- **Frontend (Vercel)**: Beautiful, responsive dashboard accessible from anywhere
+- **Backend (Local)**: Runs on your computer with admin privileges for network scanning
+
+### Setup
+
+1. **Start the local backend**:
+   ```cmd
+   start.bat
+   ```
+
+2. **Access the Vercel-hosted dashboard** at your deployment URL
+
+3. The dashboard will automatically connect to `http://localhost:5000`
+
+### Environment Variables (Vercel)
+
+Set `NEXT_PUBLIC_API_URL` in your Vercel project settings if using a different backend URL.
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    Your Computer                              │
+├──────────────────────────────────────────────────────────────┤
+│  ┌────────────────────┐    ┌─────────────────────────────┐  │
+│  │   Local Backend    │    │    Network Interface        │  │
+│  │   (Flask API)      │───▶│    (WiFi/Ethernet)          │  │
+│  │   Port 5000        │    │                             │  │
+│  └────────────────────┘    └─────────────────────────────┘  │
+│           ▲                                                   │
+└───────────│───────────────────────────────────────────────────┘
+            │
+            │ CORS-enabled API calls
+            │
+┌───────────▼───────────────────────────────────────────────────┐
+│                    Vercel (Cloud)                              │
+├───────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │                  Next.js Frontend                       │  │
+│  │                  (React Dashboard)                      │  │
+│  │           https://your-app.vercel.app                   │  │
+│  └────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────┘
+```
+
 ## Development Setup
 
 1. Clone the repository:
    ```
-   git clone https://github.com/networkmonitor/networkmonitor.git
+   git clone https://github.com/umerfarok/networkmonitor.git
    ```
 
 2. Install development dependencies:
@@ -111,11 +190,40 @@ If you encounter issues:
    npm install
    ```
 
-4. Build the application:
+4. Run the backend (with admin privileges):
    ```
-   python build.py
+   python -m networkmonitor
    ```
+
+5. Run the frontend (in another terminal):
+   ```
+   cd networkmonitor/web
+   npm run dev
+   ```
+
+6. Access the dashboard at http://localhost:3000
+
+## API Reference
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/status` | GET | Check server status |
+| `/api/devices` | GET | List all discovered devices |
+| `/api/device/block` | POST | Block a device by IP |
+| `/api/device/cut` | POST | Cut device network access (ARP spoof) |
+| `/api/device/restore` | POST | Restore device network access |
+| `/api/device/protect` | POST | Protect a device from attacks |
+| `/api/device/limit` | POST | Set speed limit for a device |
+| `/api/network/gateway` | GET | Get gateway information |
+| `/api/wifi/interfaces` | GET | List network interfaces |
+
+## Security Notes
+
+- NetworkMonitor requires **Administrator/Root** privileges
+- All API endpoints validate IP addresses to prevent injection attacks
+- The backend uses secure subprocess calls (no shell=True with user input)
+- CORS is configured to allow Vercel deployments
 
 ## License
 
-[Add license information here]
+MIT License - See LICENSE file for details

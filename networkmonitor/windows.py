@@ -149,7 +149,11 @@ class WindowsNetworkMonitor:
         """Get the default gateway IP and interface name"""
         try:
             # Use ipconfig to find default gateway
-            output = subprocess.check_output(self.ipconfig_path, shell=True, text=True)
+            output = subprocess.check_output(
+                [self.ipconfig_path], 
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
             
             current_adapter = None
             gateway = None
@@ -178,7 +182,11 @@ class WindowsNetworkMonitor:
         devices = []
         try:
             # Run ARP command to get the table
-            output = subprocess.check_output(self.arp_path, shell=True, text=True)
+            output = subprocess.check_output(
+                [self.arp_path, '-a'], 
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
             
             # Parse the output
             for line in output.splitlines():
@@ -389,11 +397,17 @@ class WindowsNetworkMonitor:
         """Perform traceroute to target IP"""
         hops = []
         
+        # Validate IP address to prevent command injection
+        ip_pattern = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+        if not re.match(ip_pattern, target_ip):
+            self.logger.error(f"Invalid IP address for traceroute: {target_ip}")
+            return hops
+        
         try:
             output = subprocess.check_output(
-                f"tracert -d -h 15 -w 500 {target_ip}",
-                shell=True, 
-                text=True
+                ['tracert', '-d', '-h', '15', '-w', '500', target_ip],
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW
             )
             
             hop_num = 0

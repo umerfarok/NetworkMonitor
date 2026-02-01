@@ -148,6 +148,25 @@ jobs:
         choco install nsis
         choco install gtk-runtime
     
+    - name: Bundle Npcap and VC++ Runtime (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        # Create bundled_resources directories
+        New-Item -ItemType Directory -Force -Path "bundled_resources/Npcap"
+        New-Item -ItemType Directory -Force -Path "bundled_resources/vcruntime"
+        
+        # Download Npcap installer (silent/OEM version)
+        Write-Host "Downloading Npcap installer..."
+        Invoke-WebRequest -Uri "https://npcap.com/dist/npcap-1.79.exe" -OutFile "bundled_resources/Npcap/npcap-installer.exe"
+        
+        # Download VC++ Runtime
+        Write-Host "Downloading VC++ Runtime..."
+        Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "bundled_resources/vcruntime/vc_redist.x64.exe"
+        
+        Write-Host "Bundled resources ready!"
+        Get-ChildItem bundled_resources -Recurse
+    
     - name: Install system dependencies (macOS)
       if: runner.os == 'macOS'
       run: |

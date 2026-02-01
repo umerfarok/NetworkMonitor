@@ -11,6 +11,14 @@ import socket
 from typing import Dict, Any, List, Optional
 from flask import Flask, jsonify, request, render_template_string, abort
 from flask_cors import CORS
+import re
+
+def validate_ip(ip: str) -> bool:
+    """Validate IPv4 address format"""
+    if not ip:
+        return False
+    pattern = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+    return bool(re.match(pattern, ip))
 
 # Configure logging
 logging.basicConfig(
@@ -104,8 +112,19 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
     # Initialize Flask app
     app = Flask(__name__)
     
-    # Enable CORS for all domains (for development)
-    CORS(app)
+    # Configure CORS for both local development and Vercel deployment
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "https://*.vercel.app",
+                "*"  # Allow all origins for local backend
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    })
 
     # Configure logging
     logging.basicConfig(
@@ -262,16 +281,25 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
         try:
             data = request.json
             ip = data.get('ip')
-            limit = float(data.get('limit', 0))
+            
+            if not validate_ip(ip):
+                return jsonify(response(False, None, "Invalid IP address")), 400
+            
+            try:
+                limit = float(data.get('limit', 0))
+                if limit < 0 or limit > 10000:  # Max 10 Gbps
+                    return jsonify(response(False, None, "Speed limit must be between 0 and 10000 Mbps")), 400
+            except (ValueError, TypeError):
+                return jsonify(response(False, None, "Invalid speed limit value")), 400
             
             device = monitor.devices.get(ip)
             if not device:
                 return jsonify(response(False, None, "Device not found")), 404
                 
-            device.speed_limit = limit
+            device.speed_limit = limit if limit > 0 else None
             return jsonify(response(True, {
                 'ip': ip,
-                'speed_limit': limit
+                'speed_limit': device.speed_limit
             }))
         except Exception as e:
             app.logger.error(f"Error setting device limit: {e}")
@@ -297,6 +325,8 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
         try:
             data = request.json
             ip = data.get('ip')
+            if not validate_ip(ip):
+                return jsonify(response(False, None, "Invalid IP address")), 400
             if monitor.block_device(ip):
                 return jsonify(response(True, {'ip': ip}))
             return jsonify(response(False, None, "Failed to block device")), 500
@@ -310,7 +340,16 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
         try:
             data = request.json
             ip = data.get('ip')
-            name = data.get('name')
+            name = data.get('name', '').strip()
+            
+            if not validate_ip(ip):
+                return jsonify(response(False, None, "Invalid IP address")), 400
+            
+            if not name or len(name) > 50:
+                return jsonify(response(False, None, "Name must be 1-50 characters")), 400
+            
+            # Sanitize name - remove potentially dangerous characters
+            name = ''.join(c for c in name if c.isalnum() or c in ' -_.')
             
             device = monitor.devices.get(ip)
             if not device:
@@ -331,16 +370,24 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
         try:
             data = request.json
             ip = data.get('ip')
-            device_type = data.get('type')
+            device_type = data.get('type', '').strip()
+            
+            if not validate_ip(ip):
+                return jsonify(response(False, None, "Invalid IP address")), 400
+            
+            # Validate device type against allowed types
+            allowed_types = ['smartphone', 'laptop', 'tablet', 'smart tv', 'gaming', 'iot', 'desktop', 'router', 'unknown']
+            if device_type.lower() not in allowed_types:
+                device_type = 'unknown'
             
             device = monitor.devices.get(ip)
             if not device:
                 return jsonify(response(False, None, "Device not found")), 404
                 
-            device.device_type = device_type
+            device.device_type = device_type.title()
             return jsonify(response(True, {
                 'ip': ip,
-                'device_type': device_type
+                'device_type': device.device_type
             }))
         except Exception as e:
             app.logger.error(f"Error setting device type: {e}")
@@ -398,7 +445,9 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
         try:
             data = request.json
             ip = data.get('ip')
-            result = getattr(monitor, 'protect_device', lambda x: False)(ip)
+            if not validate_ip(ip):
+                return jsonify(response(False, None, "Invalid IP address")), 400
+            result = monitor.protect_device(ip)
             if result:
                 return jsonify(response(True, {'ip': ip}))
             return jsonify(response(False, None, "Failed to protect device")), 500
@@ -412,7 +461,9 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
         try:
             data = request.json
             ip = data.get('ip')
-            result = getattr(monitor, 'unprotect_device', lambda x: False)(ip)
+            if not validate_ip(ip):
+                return jsonify(response(False, None, "Invalid IP address")), 400
+            result = monitor.unprotect_device(ip)
             if result:
                 return jsonify(response(True, {'ip': ip}))
             return jsonify(response(False, None, "Failed to unprotect device")), 500
@@ -426,7 +477,9 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
         try:
             data = request.json
             ip = data.get('ip')
-            result = getattr(monitor, 'cut_device', lambda x: False)(ip)
+            if not validate_ip(ip):
+                return jsonify(response(False, None, "Invalid IP address")), 400
+            result = monitor.cut_device(ip)
             if result:
                 return jsonify(response(True, {'ip': ip}))
             return jsonify(response(False, None, "Failed to cut device connection")), 500
@@ -440,7 +493,9 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
         try:
             data = request.json
             ip = data.get('ip')
-            result = getattr(monitor, 'restore_device', lambda x: False)(ip)
+            if not validate_ip(ip):
+                return jsonify(response(False, None, "Invalid IP address")), 400
+            result = monitor.restore_device(ip)
             if result:
                 return jsonify(response(True, {'ip': ip}))
             return jsonify(response(False, None, "Failed to restore device connection")), 500
@@ -452,7 +507,10 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
     def get_device_status():
         """Get attack/protection status of devices"""
         try:
-            status = getattr(monitor, 'get_protection_status', lambda: {})(request.args.get('ip'))
+            ip = request.args.get('ip')
+            if ip and not validate_ip(ip):
+                return jsonify(response(False, None, "Invalid IP address")), 400
+            status = monitor.get_protection_status(ip)
             return jsonify(response(True, status))
         except Exception as e:
             app.logger.error(f"Error getting device status: {e}")
@@ -462,7 +520,7 @@ def create_app(host: str = '127.0.0.1', port: int = 5000):
     def get_gateway_info():
         """Get gateway information"""
         try:
-            gateway_info = getattr(monitor, '_get_gateway_info', lambda: (None, None))()
+            gateway_info = monitor._get_gateway_info()
             if gateway_info and len(gateway_info) == 2:
                 gateway_ip, gateway_mac = gateway_info
                 return jsonify(response(True, {
