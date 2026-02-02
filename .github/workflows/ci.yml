@@ -237,9 +237,30 @@ jobs:
           exit 1
         }
         
+        # Find makensis - choco installs to Program Files
+        $nsisPath = "C:\Program Files (x86)\NSIS\makensis.exe"
+        if (!(Test-Path $nsisPath)) {
+          $nsisPath = "C:\Program Files\NSIS\makensis.exe"
+        }
+        if (!(Test-Path $nsisPath)) {
+          # Try to find it via where command
+          $nsisPath = (Get-Command makensis -ErrorAction SilentlyContinue).Source
+        }
+        if (!$nsisPath -or !(Test-Path $nsisPath)) {
+          Write-Error "NSIS makensis.exe not found!"
+          exit 1
+        }
+        
+        Write-Host "Using NSIS at: $nsisPath"
+        
         # Build NSIS installer
         Write-Host "Building NSIS installer..."
-        makensis installer.nsi
+        & $nsisPath installer.nsi
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "NSIS build failed with exit code $LASTEXITCODE"
+          exit 1
+        }
         
         # Verify installer was created
         if (Test-Path "dist/NetworkMonitor-Setup-*.exe") {
