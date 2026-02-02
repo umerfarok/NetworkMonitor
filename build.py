@@ -42,11 +42,31 @@ def create_spec_file():
     # Define settings for different platforms
     settings = {
         'hiddenimports': [
+            'networkmonitor',
+            'networkmonitor.server',
+            'networkmonitor.monitor',
+            'networkmonitor.launcher',
+            'networkmonitor.dependency_check',
+            'networkmonitor.npcap_helper',
+            'networkmonitor.windows',
             'scapy.layers.all',
+            'scapy.layers.l2',
+            'scapy.layers.inet',
             'engineio.async_drivers.threading',
+            'flask',
             'flask.cli',
+            'flask_cors',
             'werkzeug.debug',
-            'werkzeug.serving'
+            'werkzeug.serving',
+            'click',
+            'psutil',
+            'wmi',
+            'win32api',
+            'win32com',
+            'win32com.client',
+            'pystray',
+            'PIL',
+            'PIL.Image',
         ]
     }
     
@@ -59,7 +79,7 @@ def create_spec_file():
     
     # Create spec file content
     spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
-
+import os
 block_cipher = None
 
 # Get absolute paths
@@ -67,8 +87,8 @@ root_dir = os.path.dirname(os.path.abspath(SPECPATH))
 assets_dir = os.path.join(root_dir, 'assets')
 
 a = Analysis(
-    ['networkmonitor/cli.py'],
-    pathex=[],
+    [os.path.join(root_dir, 'networkmonitor', '__main__.py')],
+    pathex=[root_dir],
     binaries=[],
     datas=[
         ('assets/*', 'assets')

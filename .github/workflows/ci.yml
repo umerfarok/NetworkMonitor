@@ -227,12 +227,35 @@ jobs:
         # Run build with more verbosity for debugging
         python -v build.py
     
+    - name: Build Windows Installer (NSIS)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        # Verify build output exists
+        if (!(Test-Path "dist/NetworkMonitor.exe")) {
+          Write-Error "NetworkMonitor.exe not found in dist/"
+          exit 1
+        }
+        
+        # Build NSIS installer
+        Write-Host "Building NSIS installer..."
+        makensis installer.nsi
+        
+        # Verify installer was created
+        if (Test-Path "dist/NetworkMonitor-Setup-*.exe") {
+          Write-Host "Installer created successfully!"
+          Get-ChildItem dist/*.exe
+        } else {
+          Write-Error "Installer not created!"
+          exit 1
+        }
+    
     - name: Package Windows artifacts
       if: runner.os == 'Windows'
       run: |
         cd dist
         7z a -tzip ${{ env.WINDOWS_APP_NAME }}-${{ steps.get_version.outputs.version }}.zip NetworkMonitor.exe
-        7z a -tzip ${{ env.WINDOWS_APP_NAME }}-Setup-${{ steps.get_version.outputs.version }}.zip NetworkMonitor_Setup*.exe
+        7z a -tzip ${{ env.WINDOWS_APP_NAME }}-Installer-${{ steps.get_version.outputs.version }}.zip NetworkMonitor-Setup-*.exe
     
     - name: Package Linux artifact
       if: runner.os == 'Linux'
