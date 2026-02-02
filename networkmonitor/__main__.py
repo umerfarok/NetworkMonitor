@@ -6,6 +6,7 @@ This module provides the main entry point for the packaged application.
 import sys
 import os
 
+
 # Ensure the networkmonitor package is in the path
 if getattr(sys, 'frozen', False):
     # Running as compiled executable
