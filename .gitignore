@@ -36,11 +36,8 @@ htmlcov/
 .pytest_cache/
 
 # Build artifacts
-*.spec
-installer.nsi
-*.ico
-assets/icon.ico
-assets/icon.png
+# Allow spec and nsi files for build configuration
+# assets/icon.* allowed for distribution
 
 # Temporary files
 .tmp/
