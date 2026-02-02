@@ -7,7 +7,7 @@ import {
   CardContent,
   Typography,
   Grid,
-  Select, 
+  Select,
   MenuItem,
   Button,
   Slider,
@@ -51,20 +51,20 @@ import {
 } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  TrendingUp, 
-  Wifi, 
-  Speed, 
-  WifiOff, 
-  Gauge, 
-  Activity, 
-  ArrowDown, 
-  ArrowUp, 
-  Router, 
-  Network, 
-  Cpu, 
+import {
+  TrendingUp,
+  Wifi,
+  Speed,
+  WifiOff,
+  Gauge,
+  Activity,
+  ArrowDown,
+  ArrowUp,
+  Router,
+  Network,
+  Cpu,
   RefreshCw,
-  MoreVertical, 
+  MoreVertical,
   Settings
 } from 'lucide-react';
 
@@ -137,7 +137,7 @@ const DeviceCard = ({
     onRename(device.ip, newName);
     setDialogOpen(false);
   };
-  
+
 
   const getStatusColor = () => {
     if (device.attack_status === 'cutting') return 'error';
@@ -161,154 +161,154 @@ const DeviceCard = ({
 
   return (
     <motion.div
-    ref={drag}
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    transition={{ duration: 0.4, ease: 'easeOut' }}
-    style={{ opacity: isDragging ? 0.5 : 1, cursor: 'move' }}
-  >
-    <Card
-      sx={{
-        mb: 3,
-        bgcolor: 'background.paper',
-        '&:hover': { 
-          boxShadow: '0 20px 40px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06)',
-          transform: 'translateY(-4px)',
-        },
-        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-        position: 'relative',
-        overflow: 'visible',
-        borderRadius: '24px',
-        border: '1px solid rgba(0,0,0,0.08)',
-        backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
-        backdropFilter: 'blur(10px)',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          borderRadius: '24px',
-          padding: '2px',
-          background: 'linear-gradient(135deg, rgba(33,150,243,0.3), rgba(21,101,192,0.1))',
-          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-          WebkitMaskComposite: 'xor',
-          maskComposite: 'exclude',
-        }
+      ref={drag}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{
+        opacity: isDragging ? 0.85 : 1,
+        y: 0,
+        scale: isDragging ? 1.05 : 1,
+        rotate: isDragging ? 2 : 0,
+        boxShadow: isDragging
+          ? '0 30px 60px rgba(33, 150, 243, 0.3), 0 15px 30px rgba(33, 150, 243, 0.2)'
+          : 'none',
       }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      style={{
+        cursor: isDragging ? 'grabbing' : 'grab',
+        zIndex: isDragging ? 1000 : 1,
+        position: 'relative',
+      }}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 1.03 }}
     >
-      <CardContent sx={{ p: 4 }}>
-        <Grid container spacing={4} alignItems="center">
-          <Grid item>
-            <Box
-              sx={{
-                bgcolor: 'rgba(33,150,243,0.08)',
-                p: 1.5,
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transform: 'rotate(0deg)',
-                transition: 'transform 0.3s ease',
-                '&:hover': {
-                  transform: 'rotate(180deg)',
-                  bgcolor: 'rgba(33,150,243,0.12)',
-                }
-              }}
-            >
-              <DragIndicatorIcon 
-                color="primary" 
-                sx={{ 
-                  opacity: 0.8,
-                  transition: 'opacity 0.2s',
-                  '&:hover': { opacity: 1 }
-                }}
-              />
-            </Box>
-          </Grid>
-          <Grid item>
-            <Badge
-              color={getStatusColor()}
-              variant="dot"
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-              }}
-              sx={{
-                '& .MuiBadge-badge': {
-                  height: '16px',
-                  width: '16px',
-                  borderRadius: '8px',
-                  boxShadow: '0 0 0 3px #fff, 0 0 0 6px rgba(0,0,0,0.04)',
-                  animation: 'pulse 2s infinite'
-                },
-                '@keyframes pulse': {
-                  '0%': { transform: 'scale(1)' },
-                  '50%': { transform: 'scale(1.1)' },
-                  '100%': { transform: 'scale(1)' }
-                }
-              }}
-            >
+      <Card
+        sx={{
+          mb: 3,
+          bgcolor: 'background.paper',
+          '&:hover': {
+            boxShadow: '0 20px 40px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06)',
+            transform: 'translateY(-4px)',
+          },
+          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
+          overflow: 'visible',
+          borderRadius: '24px',
+          border: '1px solid rgba(0,0,0,0.08)',
+          backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
+          backdropFilter: 'blur(10px)',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: '24px',
+            padding: '2px',
+            background: 'linear-gradient(135deg, rgba(33,150,243,0.3), rgba(21,101,192,0.1))',
+            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+            WebkitMaskComposite: 'xor',
+            maskComposite: 'exclude',
+          }
+        }}
+      >
+        <CardContent sx={{ p: 4 }}>
+          <Grid container spacing={4} alignItems="center">
+            <Grid item>
               <Box
                 sx={{
-                  bgcolor: device.status === 'active' ? 'primary.lighter' : 'error.lighter',
-                  p: 2,
+                  bgcolor: 'rgba(33,150,243,0.08)',
+                  p: 1.5,
                   borderRadius: '16px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  transform: 'rotate(0deg)',
                   transition: 'transform 0.3s ease',
                   '&:hover': {
-                    transform: 'scale(1.1)',
+                    transform: 'rotate(180deg)',
+                    bgcolor: 'rgba(33,150,243,0.12)',
                   }
                 }}
               >
-                {device.status === 'active' ? (
-                  <WifiIcon color="primary" sx={{ fontSize: 32 }} />
-                ) : (
-                  <WifiOffIcon color="error" sx={{ fontSize: 32 }} />
-                )}
+                <DragIndicatorIcon
+                  color="primary"
+                  sx={{
+                    opacity: 0.8,
+                    transition: 'opacity 0.2s',
+                    '&:hover': { opacity: 1 }
+                  }}
+                />
               </Box>
-            </Badge>
-          </Grid>
-          <Grid item xs>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                fontWeight: 600,
-                color: 'text.primary',
-                mb: 1.5,
-                letterSpacing: '-0.5px'
-              }}
-            >
-              {device.hostname || device.ip}
-              {getStatusChip()}
-            </Typography>
-            <Stack spacing={1.5}>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  fontFamily: 'Roboto Mono, monospace',
-                  letterSpacing: '0.5px',
-                  color: 'text.secondary',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                  fontSize: '0.9rem'
+            </Grid>
+            <Grid item>
+              <Badge
+                color={getStatusColor()}
+                variant="dot"
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    height: '16px',
+                    width: '16px',
+                    borderRadius: '8px',
+                    boxShadow: '0 0 0 3px #fff, 0 0 0 6px rgba(0,0,0,0.04)',
+                    animation: 'pulse 2s infinite'
+                  },
+                  '@keyframes pulse': {
+                    '0%': { transform: 'scale(1)' },
+                    '50%': { transform: 'scale(1.1)' },
+                    '100%': { transform: 'scale(1)' }
+                  }
                 }}
               >
-                <FingerprintIcon sx={{ fontSize: 22, opacity: 0.9 }} />
-                MAC: {device.mac}
+                <Box
+                  sx={{
+                    bgcolor: device.status === 'active' ? 'primary.lighter' : 'error.lighter',
+                    p: 2,
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'transform 0.3s ease',
+                    '&:hover': {
+                      transform: 'scale(1.1)',
+                    }
+                  }}
+                >
+                  {device.status === 'active' ? (
+                    <WifiIcon color="primary" sx={{ fontSize: 32 }} />
+                  ) : (
+                    <WifiOffIcon color="error" sx={{ fontSize: 32 }} />
+                  )}
+                </Box>
+              </Badge>
+            </Grid>
+            <Grid item xs>
+              <Typography
+                variant="h5"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  mb: 1.5,
+                  letterSpacing: '-0.5px'
+                }}
+              >
+                {device.hostname || device.ip}
+                {getStatusChip()}
               </Typography>
-              {device.vendor && (
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
+              <Stack spacing={1.5}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontFamily: 'Roboto Mono, monospace',
+                    letterSpacing: '0.5px',
                     color: 'text.secondary',
                     display: 'flex',
                     alignItems: 'center',
@@ -316,232 +316,246 @@ const DeviceCard = ({
                     fontSize: '0.9rem'
                   }}
                 >
-                  <BusinessIcon sx={{ fontSize: 18, opacity: 0.8 }} />
-                  Vendor: {device.vendor}
+                  <FingerprintIcon sx={{ fontSize: 22, opacity: 0.9 }} />
+                  MAC: {device.mac}
                 </Typography>
-              )}
-            </Stack>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Box
-              sx={{
-                bgcolor: 'rgba(33,150,243,0.04)',
-                p: 3,
-                borderRadius: '20px',
-                border: '1px solid rgba(33,150,243,0.1)',
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: 'radial-gradient(circle at top right, rgba(33,150,243,0.1), transparent)',
-                  opacity: 0.5
-                }
-              }}
-            >
-              <Typography 
-                variant="body2" 
+                {device.vendor && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'text.secondary',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    <BusinessIcon sx={{ fontSize: 18, opacity: 0.8 }} />
+                    Vendor: {device.vendor}
+                  </Typography>
+                )}
+              </Stack>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Box
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                  mb: 2.5,
-                  position: 'relative'
-                }}
-              >
-                <SpeedIcon sx={{ fontSize: 20, color: 'primary.main' }} />
-                Current Speed: 
-                <Box
-                  component="span"
-                  sx={{
-                    fontWeight: 700,
-                    color: 'primary.main',
-                    bgcolor: 'primary.lighter',
-                    px: 1.5,
-                    py: 0.75,
-                    borderRadius: '8px',
-                    fontSize: '0.95rem',
-                    boxShadow: '0 2px 8px rgba(33,150,243,0.2)',
-                    animation: 'float 3s ease-in-out infinite'
-                  }}
-                >
-                  {device.current_speed?.toFixed(1)} Mbps
-                </Box>
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={(device.current_speed / (device.speed_limit || 100)) * 100}
-                sx={{ 
-                  mb: 3,
-                  height: 12,
-                  borderRadius: 6,
-                  bgcolor: 'rgba(0,0,0,0.04)',
-                  '& .MuiLinearProgress-bar': {
-                    borderRadius: 6,
-                    backgroundImage: 'linear-gradient(90deg, #2196f3, #1565c0)',
-                    boxShadow: '0 2px 6px rgba(33,150,243,0.3)'
+                  bgcolor: 'rgba(33,150,243,0.04)',
+                  p: 3,
+                  borderRadius: '20px',
+                  border: '1px solid rgba(33,150,243,0.1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'radial-gradient(circle at top right, rgba(33,150,243,0.1), transparent)',
+                    opacity: 0.5
                   }
                 }}
-              />
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs>
-                  <Slider
-                    value={device.speed_limit || 0}
-                    onChange={(_, value) => onLimitChange(device.ip, value)}
-                    min={0}
-                    max={100}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={(value) => `${value} Mbps`}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    mb: 2.5,
+                    position: 'relative'
+                  }}
+                >
+                  <SpeedIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+                  Current Speed:
+                  <Box
+                    component="span"
                     sx={{
-                      '& .MuiSlider-thumb': {
-                        width: 20,
-                        height: 20,
-                        transition: 'all 0.2s',
-                        '&:hover, &.Mui-focusVisible': {
-                          boxShadow: '0 0 0 10px rgba(33, 150, 243, 0.2)'
-                        }
-                      },
-                      '& .MuiSlider-track': {
-                        height: 8,
-                        borderRadius: 4
-                      },
-                      '& .MuiSlider-rail': {
-                        height: 8,
-                        borderRadius: 4,
-                        opacity: 0.2
-                      },
-                      '& .MuiSlider-valueLabel': {
-                        borderRadius: '10px',
-                        padding: '6px 12px',
-                        backgroundColor: 'primary.dark',
-                        fontSize: '0.85rem',
-                        fontWeight: 600
-                      }
+                      fontWeight: 700,
+                      color: 'primary.main',
+                      bgcolor: 'primary.lighter',
+                      px: 1.5,
+                      py: 0.75,
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      boxShadow: '0 2px 8px rgba(33,150,243,0.2)',
+                      animation: 'float 3s ease-in-out infinite'
                     }}
-                  />
-                </Grid>
-                <Grid item>
-                  <Stack direction="row" spacing={2}>
-                    <Tooltip 
-                      title={device.is_protected ? "Unprotect Device" : "Protect Device"}
-                      arrow
-                    >
-                      <IconButton
-                        size="large"
-                        onClick={() => device.is_protected ? onUnprotect(device.ip) : onProtect(device.ip)}
-                        color={device.is_protected ? "success" : "default"}
-                        sx={{ 
-                          bgcolor: device.is_protected ? 'success.lighter' : 'action.hover',
-                          '&:hover': {
-                            bgcolor: device.is_protected ? 'success.light' : 'action.selected',
-                            transform: 'scale(1.1)'
-                          },
-                          transition: 'all 0.3s',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                        }}
-                      >
-                        <SecurityIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip 
-                      title={device.attack_status === 'cutting' ? "Restore Network" : "Cut Network"}
-                      arrow
-                    >
-                      <IconButton
-                        size="large"
-                        onClick={() => device.attack_status === 'cutting' ? onRestore(device.ip) : onCut(device.ip)}
-                        color={device.attack_status === 'cutting' ? "error" : "default"}
-                        disabled={device.is_protected}
-                        sx={{ 
-                          bgcolor: device.attack_status === 'cutting' ? 'error.lighter' : 'action.hover',
-                          '&:hover': {
-                            bgcolor: device.attack_status === 'cutting' ? 'error.light' : 'action.selected',
-                            transform: 'scale(1.1)'
-                          },
-                          transition: 'all 0.3s',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          '&.Mui-disabled': {
-                            bgcolor: 'action.disabledBackground',
-                            opacity: 0.6
+                  >
+                    {device.current_speed?.toFixed(1)} Mbps
+                  </Box>
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={(device.current_speed / (device.speed_limit || 100)) * 100}
+                  sx={{
+                    mb: 3,
+                    height: 12,
+                    borderRadius: 6,
+                    bgcolor: 'rgba(0,0,0,0.04)',
+                    '& .MuiLinearProgress-bar': {
+                      borderRadius: 6,
+                      backgroundImage: 'linear-gradient(90deg, #2196f3, #1565c0)',
+                      boxShadow: '0 2px 6px rgba(33,150,243,0.3)'
+                    }
+                  }}
+                />
+                <Grid container spacing={2} alignItems="center">
+                  <Grid item xs>
+                    <Slider
+                      value={device.speed_limit || 0}
+                      onChange={(_, value) => onLimitChange(device.ip, value)}
+                      min={0}
+                      max={100}
+                      valueLabelDisplay="auto"
+                      valueLabelFormat={(value) => `${value} Mbps`}
+                      sx={{
+                        '& .MuiSlider-thumb': {
+                          width: 20,
+                          height: 20,
+                          transition: 'all 0.2s',
+                          '&:hover, &.Mui-focusVisible': {
+                            boxShadow: '0 0 0 10px rgba(33, 150, 243, 0.2)'
                           }
-                        }}
+                        },
+                        '& .MuiSlider-track': {
+                          height: 8,
+                          borderRadius: 4
+                        },
+                        '& .MuiSlider-rail': {
+                          height: 8,
+                          borderRadius: 4,
+                          opacity: 0.2
+                        },
+                        '& .MuiSlider-valueLabel': {
+                          borderRadius: '10px',
+                          padding: '6px 12px',
+                          backgroundColor: 'primary.dark',
+                          fontSize: '0.85rem',
+                          fontWeight: 600
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item>
+                    <Stack direction="row" spacing={2}>
+                      <Tooltip
+                        title={device.is_protected ? "Unprotect Device" : "Protect Device"}
+                        arrow
                       >
-                        {device.attack_status === 'cutting' ? <RestartAltIcon /> : <BlockIcon />}
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Rename Device" arrow>
-                      <IconButton
-                        size="large"
-                        onClick={() => setDialogOpen(true)}
-                        color="primary"
-                        sx={{ 
-                          bgcolor: 'primary.lighter',
-                          '&:hover': {
-                            bgcolor: 'primary.light',
-                            transform: 'scale(1.1)'
-                          },
-                          transition: 'all 0.3s',
-                          boxShadow: '0 4px 12px rgba(33,150,243,0.2)'
-                        }}
+                        <IconButton
+                          size="large"
+                          onClick={() => device.is_protected ? onUnprotect(device.ip) : onProtect(device.ip)}
+                          color={device.is_protected ? "success" : "default"}
+                          sx={{
+                            bgcolor: device.is_protected ? 'success.lighter' : 'action.hover',
+                            '&:hover': {
+                              bgcolor: device.is_protected ? 'success.light' : 'action.selected',
+                              transform: 'scale(1.1)'
+                            },
+                            transition: 'all 0.3s',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          <SecurityIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip
+                        title={device.attack_status === 'cutting' ? "Restore Network" : "Cut Network"}
+                        arrow
                       >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
+                        <IconButton
+                          size="large"
+                          onClick={() => device.attack_status === 'cutting' ? onRestore(device.ip) : onCut(device.ip)}
+                          color={device.attack_status === 'cutting' ? "error" : "default"}
+                          disabled={device.is_protected}
+                          sx={{
+                            bgcolor: device.attack_status === 'cutting' ? 'error.lighter' : 'action.hover',
+                            '&:hover': {
+                              bgcolor: device.attack_status === 'cutting' ? 'error.light' : 'action.selected',
+                              transform: 'scale(1.1)'
+                            },
+                            transition: 'all 0.3s',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                            '&.Mui-disabled': {
+                              bgcolor: 'action.disabledBackground',
+                              opacity: 0.6
+                            }
+                          }}
+                        >
+                          {device.attack_status === 'cutting' ? <RestartAltIcon /> : <BlockIcon />}
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Rename Device" arrow>
+                        <IconButton
+                          size="large"
+                          onClick={() => setDialogOpen(true)}
+                          color="primary"
+                          sx={{
+                            bgcolor: 'primary.lighter',
+                            '&:hover': {
+                              bgcolor: 'primary.light',
+                              transform: 'scale(1.1)'
+                            },
+                            transition: 'all 0.3s',
+                            boxShadow: '0 4px 12px rgba(33,150,243,0.2)'
+                          }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </Grid>
                 </Grid>
-              </Grid>
-            </Box>
+              </Box>
+            </Grid>
           </Grid>
-        </Grid>
-      </CardContent>
+        </CardContent>
 
-      <Dialog 
-        open={dialogOpen} 
-        onClose={() => setDialogOpen(false)}
-        PaperProps={{
-          sx: {
-            borderRadius: '24px',
-            maxWidth: '500px',
-            width: '100%',
-            backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95))',
-            boxShadow: '0 32px 64px rgba(0,0,0,0.2)',
-            border: '1px solid rgba(33,150,243,0.1)',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+        <Dialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          PaperProps={{
+            sx: {
               borderRadius: '24px',
-              padding: '2px',
-              background: 'linear-gradient(135deg, rgba(33,150,243,0.3), rgba(21,101,192,0.1))',
-              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-              WebkitMaskComposite: 'xor',
-              maskComposite: 'exclude',
+              maxWidth: '500px',
+              width: '100%',
+              backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95))',
+              boxShadow: '0 32px 64px rgba(0,0,0,0.2)',
+              border: '1px solid rgba(33,150,243,0.1)',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: '24px',
+                padding: '2px',
+                background: 'linear-gradient(135deg, rgba(33,150,243,0.3), rgba(21,101,192,0.1))',
+                WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                WebkitMaskComposite: 'xor',
+                maskComposite: 'exclude',
+              }
             }
-          }
-        }}
-        TransitionComponent={Fade}
-        TransitionProps={{ timeout: 400 }}
-      >
-        <DialogTitle 
-          sx={{ 
-            p: 4,
-            pb: 2,
-            fontSize: '1.75rem',
-            fontWeight: 800,
-            color: 'text.primary',
-            letterSpacing: '-0.5px'
           }}
+          TransitionComponent={Fade}
+          TransitionProps={{ timeout: 400 }}
         >
-          Rename Device
-        </DialogTitle>
-        <DialogContent sx={{ p: 4, pb: 2 }}>
+          <DialogTitle
+            sx={{
+              p: 4,
+              pb: 2,
+              fontSize: '1.75rem',
+              fontWeight: 800,
+              color: 'text.primary',
+              letterSpacing: '-0.5px'
+            }}
+          >
+            Rename Device
+          </DialogTitle>
+          <DialogContent sx={{ p: 4, pb: 2 }}>
             <TextField
               autoFocus
               margin="dense"
@@ -583,10 +597,10 @@ const DeviceCard = ({
             />
           </DialogContent>
           <DialogActions sx={{ px: 4, pb: 4, gap: 2 }}>
-            <Button 
+            <Button
               onClick={() => setDialogOpen(false)}
               variant="outlined"
-              sx={{ 
+              sx={{
                 borderRadius: '12px',
                 px: 4,
                 py: 1.5,
@@ -604,11 +618,11 @@ const DeviceCard = ({
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleRename} 
+            <Button
+              onClick={handleRename}
               color="primary"
               variant="contained"
-              sx={{ 
+              sx={{
                 borderRadius: '12px',
                 px: 4,
                 py: 1.5,
@@ -633,30 +647,44 @@ const DeviceCard = ({
 };
 
 const SpeedGroup = ({ title, devices, onDrop, ...deviceActions }) => {
-  const [{ isOver }, drop] = useDrop(() => ({
+  const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: 'device',
     drop: (item) => onDrop(item.device, title),
     collect: (monitor) => ({
       isOver: monitor.isOver(),
+      canDrop: monitor.canDrop(),
     }),
   }));
+
+  const isActive = isOver && canDrop;
 
   return (
     <Paper
       ref={drop}
       sx={{
         p: 4,
-        minHeight: 200,
-        bgcolor: isOver ? 'rgba(33, 150, 243, 0.04)' : 'background.paper',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        minHeight: 280,
+        bgcolor: isActive
+          ? 'rgba(33, 150, 243, 0.08)'
+          : canDrop
+            ? 'rgba(33, 150, 243, 0.02)'
+            : 'background.paper',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         borderRadius: '24px',
         position: 'relative',
-        border: '1px solid rgba(0,0,0,0.08)',
-        backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
+        border: isActive
+          ? '2px dashed rgba(33, 150, 243, 0.6)'
+          : '1px solid rgba(0,0,0,0.08)',
+        backgroundImage: isActive
+          ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(21, 101, 192, 0.05))'
+          : 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
         backdropFilter: 'blur(10px)',
-        boxShadow: isOver 
-          ? '0 20px 40px rgba(33, 150, 243, 0.15), 0 8px 16px rgba(33, 150, 243, 0.1)'
-          : '0 12px 24px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04)',
+        transform: isActive ? 'scale(1.02)' : 'scale(1)',
+        boxShadow: isActive
+          ? '0 24px 48px rgba(33, 150, 243, 0.25), 0 12px 24px rgba(33, 150, 243, 0.15), inset 0 0 0 2px rgba(33, 150, 243, 0.1)'
+          : canDrop
+            ? '0 16px 32px rgba(0,0,0,0.08), 0 6px 12px rgba(0,0,0,0.04)'
+            : '0 12px 24px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04)',
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -666,28 +694,41 @@ const SpeedGroup = ({ title, devices, onDrop, ...deviceActions }) => {
           bottom: 0,
           borderRadius: '24px',
           padding: '2px',
-          background: 'linear-gradient(135deg, rgba(33,150,243,0.3), rgba(21,101,192,0.1))',
+          background: isActive
+            ? 'linear-gradient(135deg, rgba(33,150,243,0.6), rgba(21,101,192,0.3))'
+            : 'linear-gradient(135deg, rgba(33,150,243,0.3), rgba(21,101,192,0.1))',
           WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
           WebkitMaskComposite: 'xor',
           maskComposite: 'exclude',
+          animation: isActive ? 'pulse-border 1.5s ease-in-out infinite' : 'none',
+        },
+        '@keyframes pulse-border': {
+          '0%, 100%': {
+            opacity: 1,
+            transform: 'scale(1)',
+          },
+          '50%': {
+            opacity: 0.7,
+            transform: 'scale(1.01)',
+          },
         },
         '&:hover': {
-          transform: 'translateY(-4px)',
+          transform: isActive ? 'scale(1.02)' : 'translateY(-4px)',
           boxShadow: '0 24px 48px rgba(33, 150, 243, 0.2), 0 12px 24px rgba(33, 150, 243, 0.15)'
         }
       }}
     >
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'space-between',
-        mb: 3 
+        mb: 3
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography 
-            variant="h5" 
+          <Typography
+            variant="h5"
             color="primary"
-            sx={{ 
+            sx={{
               fontWeight: 800,
               letterSpacing: '-0.5px',
               background: 'linear-gradient(135deg, #2196f3, #1565c0)',
@@ -729,8 +770,8 @@ const SpeedGroup = ({ title, devices, onDrop, ...deviceActions }) => {
             }}
           />
         </Box>
-        <Box sx={{ 
-          display: 'flex', 
+        <Box sx={{
+          display: 'flex',
           gap: 1,
           position: 'relative',
           '&::before': {
@@ -772,18 +813,18 @@ const SpeedGroup = ({ title, devices, onDrop, ...deviceActions }) => {
           </IconButton>
         </Box>
       </Box>
-      
-      <Divider 
-        sx={{ 
+
+      <Divider
+        sx={{
           mb: 4,
           backgroundImage: 'linear-gradient(90deg, rgba(33,150,243,0.2), transparent)',
           height: '2px',
           border: 'none'
-        }} 
+        }}
       />
 
       <AnimatePresence>
-        <Box 
+        <Box
           sx={{
             display: 'grid',
             gap: 3,
@@ -818,34 +859,82 @@ const SpeedGroup = ({ title, devices, onDrop, ...deviceActions }) => {
       </AnimatePresence>
 
       {devices.length === 0 && (
-        <Box
-          sx={{
-            textAlign: 'center',
-            py: 8,
-            px: 4,
-            bgcolor: 'rgba(33,150,243,0.02)',
-            borderRadius: '16px',
-            border: '2px dashed rgba(33,150,243,0.2)'
-          }}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
         >
-          <Typography
-            variant="h6"
+          <Box
             sx={{
-              color: 'text.secondary',
-              fontWeight: 500,
-              mb: 1
+              textAlign: 'center',
+              py: 6,
+              px: 4,
+              bgcolor: isActive
+                ? 'rgba(33, 150, 243, 0.12)'
+                : 'rgba(33,150,243,0.02)',
+              borderRadius: '20px',
+              border: isActive
+                ? '3px dashed rgba(33, 150, 243, 0.5)'
+                : '2px dashed rgba(33,150,243,0.15)',
+              transition: 'all 0.3s ease',
+              transform: isActive ? 'scale(1.02)' : 'scale(1)',
             }}
           >
-            No devices in this group
-          </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ opacity: 0.8 }}
-          >
-            Drag and drop devices here to add them
-          </Typography>
-        </Box>
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                bgcolor: isActive
+                  ? 'rgba(33, 150, 243, 0.15)'
+                  : 'rgba(33, 150, 243, 0.06)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 3,
+                transition: 'all 0.3s ease',
+                animation: isActive ? 'bounce 1s ease infinite' : 'none',
+                '@keyframes bounce': {
+                  '0%, 100%': { transform: 'translateY(0)' },
+                  '50%': { transform: 'translateY(-8px)' },
+                },
+              }}
+            >
+              <DragIndicatorIcon
+                sx={{
+                  fontSize: 40,
+                  color: isActive ? 'primary.main' : 'rgba(33,150,243,0.4)',
+                  transition: 'all 0.3s ease',
+                }}
+              />
+            </Box>
+            <Typography
+              variant="h6"
+              sx={{
+                color: isActive ? 'primary.main' : 'text.secondary',
+                fontWeight: 600,
+                mb: 1,
+                transition: 'all 0.3s ease',
+              }}
+            >
+              {isActive ? 'Drop device here!' : 'No devices in this group'}
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                opacity: 0.7,
+                maxWidth: 280,
+                mx: 'auto',
+              }}
+            >
+              {isActive
+                ? 'Release to add this device to the group'
+                : 'Drag and drop devices here to organize them'}
+            </Typography>
+          </Box>
+        </motion.div>
       )}
     </Paper>
   );
@@ -908,55 +997,55 @@ const NetworkDashboard = () => {
   };
   // Add these methods in the NetworkDashboard component
 
-const handleRenameDevice = async (ip, newName) => {
-  try {
-    const response = await fetch('http://localhost:5000/api/device/rename', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ip, name: newName }),
-    });
-    const data = await response.json();
-    if (data.success) {
-      showNotification(`Device renamed to ${newName}`, 'success');
+  const handleRenameDevice = async (ip, newName) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/device/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip, name: newName }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        showNotification(`Device renamed to ${newName}`, 'success');
+        fetchDevices();
+      } else {
+        showNotification(data.error || 'Failed to rename device', 'error');
+      }
+    } catch (error) {
+      console.error('Error renaming device:', error);
+      showNotification('Failed to rename device', 'error');
+    }
+  };
+
+  const handleDeviceDrop = async (device, group) => {
+    try {
+      if (group === 'limited' && !device.speed_limit) {
+        // Set a default speed limit when moving to limited group
+        await handleSpeedLimit(device.ip, 10); // Default 10 Mbps limit
+      } else if (group === 'unlimited' && device.speed_limit) {
+        // Remove speed limit when moving to unlimited group
+        await handleSpeedLimit(device.ip, 0);
+      }
+      showNotification(`Device moved to ${group} group`, 'success');
       fetchDevices();
-    } else {
-      showNotification(data.error || 'Failed to rename device', 'error');
+    } catch (error) {
+      console.error('Error handling device drop:', error);
+      showNotification('Failed to move device', 'error');
     }
-  } catch (error) {
-    console.error('Error renaming device:', error);
-    showNotification('Failed to rename device', 'error');
-  }
-};
+  };
 
-const handleDeviceDrop = async (device, group) => {
-  try {
-    if (group === 'limited' && !device.speed_limit) {
-      // Set a default speed limit when moving to limited group
-      await handleSpeedLimit(device.ip, 10); // Default 10 Mbps limit
-    } else if (group === 'unlimited' && device.speed_limit) {
-      // Remove speed limit when moving to unlimited group
-      await handleSpeedLimit(device.ip, 0);
+  const fetchStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/status');
+      const data = await response.json();
+      if (data.success) {
+        // You can add state management for server status if needed
+        console.log('Server status:', data.data);
+      }
+    } catch (error) {
+      showNotification('Failed to fetch server status', 'error');
     }
-    showNotification(`Device moved to ${group} group`, 'success');
-    fetchDevices();
-  } catch (error) {
-    console.error('Error handling device drop:', error);
-    showNotification('Failed to move device', 'error');
-  }
-};
-
-const fetchStatus = async () => {
-  try {
-    const response = await fetch('http://localhost:5000/api/status');
-    const data = await response.json();
-    if (data.success) {
-      // You can add state management for server status if needed
-      console.log('Server status:', data.data);
-    }
-  } catch (error) {
-    showNotification('Failed to fetch server status', 'error');
-  }
-};
+  };
   const fetchInterfaces = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/wifi/interfaces');
@@ -994,8 +1083,8 @@ const fetchStatus = async () => {
       const data = await response.json();
       if (data.success) {
         // Filter out null/undefined devices and ensure required properties
-        const validDevices = data.data.filter(device => 
-          device && device.ip && device.mac && 
+        const validDevices = data.data.filter(device =>
+          device && device.ip && device.mac &&
           (device.status === "active" || device.status === "inactive")
         ).map(device => ({
           ...device,
@@ -1125,7 +1214,7 @@ const fetchStatus = async () => {
           <Grid container spacing={3}>
             {/* Gateway Info Card */}
             <Grid item xs={12}>
-                            <Card
+              <Card
                 sx={{
                   borderRadius: '16px',
                   background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9))',
@@ -1170,7 +1259,7 @@ const fetchStatus = async () => {
                       </Typography>
                     </Box>
                   </Box>
-              
+
                   <Grid container spacing={3}>
                     <Grid item xs={12} md={6}>
                       <Paper
@@ -1214,7 +1303,7 @@ const fetchStatus = async () => {
                         </Box>
                       </Paper>
                     </Grid>
-              
+
                     <Grid item xs={12} md={6}>
                       <Paper
                         sx={{
@@ -1258,7 +1347,7 @@ const fetchStatus = async () => {
                       </Paper>
                     </Grid>
                   </Grid>
-              
+
                   {/* Status Indicator */}
                   <Box
                     sx={{
@@ -1275,10 +1364,9 @@ const fetchStatus = async () => {
                         borderRadius: '50%',
                         bgcolor: gatewayInfo ? 'success.main' : 'error.main',
                         boxShadow: (theme) =>
-                          `0 0 0 3px ${
-                            gatewayInfo
-                              ? theme.palette.success.lighter
-                              : theme.palette.error.lighter
+                          `0 0 0 3px ${gatewayInfo
+                            ? theme.palette.success.lighter
+                            : theme.palette.error.lighter
                           }`
                       }}
                     />
@@ -1299,7 +1387,7 @@ const fetchStatus = async () => {
             {/* Device Groups with new actions */}
             <Grid item xs={12} md={6}>
               <SpeedGroup
-               title="Unlimited Speed Devices" 
+                title="Unlimited Speed Devices"
                 devices={speedGroups.unlimited}
                 onDrop={(device) => handleDeviceDrop(device, 'unlimited')}
                 onLimitChange={handleSpeedLimit}
@@ -1326,499 +1414,499 @@ const fetchStatus = async () => {
 
             {/* Network Statistics Card */}
             <Grid item xs={12}>
-            <Card
-    sx={{
-      borderRadius: '16px',
-      background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9))',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(0,0,0,0.06)',
-      boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-      transition: 'all 0.3s ease',
-      '&:hover': {
-        transform: 'translateY(-2px)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
-      }
-    }}
-  >
-    {/* Rest of the code remains the same until the Limited Devices icon */}
-    <CardContent sx={{ p: 3 }}>
-      <Typography 
-        variant="h6" 
-        gutterBottom 
-        sx={{
-          fontWeight: 700,
-          fontSize: '1.25rem',
-          color: 'text.primary',
-          mb: 3,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}
-      >
-        <TrendingUp size={24} />
-        Network Statistics
-      </Typography>
-      
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={3}>
-          <Paper 
-            sx={{ 
-              p: 3,
-              textAlign: 'center',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, primary.main, primary.dark)',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(45deg, #2196f3, #1976d2)',
-                opacity: 1
-              }
-            }}
-          >
-            <Box
-              sx={{
-                position: 'relative',
-                zIndex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1
-              }}
-            >
-              <Box
+              <Card
                 sx={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '50%',
-                  bgcolor: 'rgba(255,255,255,0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 12px'
+                  borderRadius: '16px',
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9))',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+                  }
                 }}
               >
-                <Wifi size={24} color="white" />
-              </Box>
-              <Typography 
-                variant="h4"
-                sx={{ 
-                  color: 'white',
-                  fontWeight: 700,
-                  textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}
-              >
-                {devices.length}
-              </Typography>
-              <Typography 
-                variant="body2"
-                sx={{ 
-                  color: 'rgba(255,255,255,0.9)',
-                  fontWeight: 500,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                Total Devices
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
+                {/* Rest of the code remains the same until the Limited Devices icon */}
+                <CardContent sx={{ p: 3 }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: '1.25rem',
+                      color: 'text.primary',
+                      mb: 3,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1
+                    }}
+                  >
+                    <TrendingUp size={24} />
+                    Network Statistics
+                  </Typography>
 
-        <Grid item xs={12} md={3}>
-          <Paper 
-            sx={{ 
-              p: 3,
-              textAlign: 'center',
-              borderRadius: '12px',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(45deg, #4caf50, #2e7d32)',
-                opacity: 1
-              }
-            }}
-          >
-            <Box
-              sx={{
-                position: 'relative',
-                zIndex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1
-              }}
-            >
-              <Box
-                sx={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '50%',
-                  bgcolor: 'rgba(255,255,255,0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 12px'
-                }}
-              >
-                <Wifi size={24} color="white" />
-              </Box>
-              <Typography 
-                variant="h4"
-                sx={{ 
-                  color: 'white',
-                  fontWeight: 700,
-                  textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}
-              >
-                {devices.filter(d => d.status === 'active').length}
-              </Typography>
-              <Typography 
-                variant="body2"
-                sx={{ 
-                  color: 'rgba(255,255,255,0.9)',
-                  fontWeight: 500,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                Active Devices
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={3}>
+                      <Paper
+                        sx={{
+                          p: 3,
+                          textAlign: 'center',
+                          borderRadius: '12px',
+                          background: 'linear-gradient(135deg, primary.main, primary.dark)',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'linear-gradient(45deg, #2196f3, #1976d2)',
+                            opacity: 1
+                          }
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            zIndex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '50%',
+                              bgcolor: 'rgba(255,255,255,0.15)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              margin: '0 auto 12px'
+                            }}
+                          >
+                            <Wifi size={24} color="white" />
+                          </Box>
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              color: 'white',
+                              fontWeight: 700,
+                              textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            {devices.length}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'rgba(255,255,255,0.9)',
+                              fontWeight: 500,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}
+                          >
+                            Total Devices
+                          </Typography>
+                        </Box>
+                      </Paper>
+                    </Grid>
 
-        <Grid item xs={12} md={3}>
-          <Paper 
-            sx={{ 
-              p: 3,
-              textAlign: 'center',
-              borderRadius: '12px',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(45deg, #ff9800, #ed6c02)',
-                opacity: 1
-              }
-            }}
-          >
-            <Box
-              sx={{
-                position: 'relative',
-                zIndex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1
-              }}
-            >
-              <Box
-                sx={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '50%',
-                  bgcolor: 'rgba(255,255,255,0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 12px'
-                }}
-              >
-                <Gauge size={24} color="white" />
-              </Box>
-              <Typography 
-                variant="h4"
-                sx={{ 
-                  color: 'white',
-                  fontWeight: 700,
-                  textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}
-              >
-                {devices.filter(d => d.speed_limit).length}
-              </Typography>
-              <Typography 
-                variant="body2"
-                sx={{ 
-                  color: 'rgba(255,255,255,0.9)',
-                  fontWeight: 500,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                Limited Devices
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Paper
+                        sx={{
+                          p: 3,
+                          textAlign: 'center',
+                          borderRadius: '12px',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'linear-gradient(45deg, #4caf50, #2e7d32)',
+                            opacity: 1
+                          }
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            zIndex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '50%',
+                              bgcolor: 'rgba(255,255,255,0.15)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              margin: '0 auto 12px'
+                            }}
+                          >
+                            <Wifi size={24} color="white" />
+                          </Box>
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              color: 'white',
+                              fontWeight: 700,
+                              textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            {devices.filter(d => d.status === 'active').length}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'rgba(255,255,255,0.9)',
+                              fontWeight: 500,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}
+                          >
+                            Active Devices
+                          </Typography>
+                        </Box>
+                      </Paper>
+                    </Grid>
 
-        <Grid item xs={12} md={3}>
-          <Paper 
-            sx={{ 
-              p: 3,
-              textAlign: 'center',
-              borderRadius: '12px',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(45deg, #f44336, #d32f2f)',
-                opacity: 1
-              }
-            }}
-          >
-            <Box
-              sx={{
-                position: 'relative',
-                zIndex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1
-              }}
-            >
-              <Box
-                sx={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '50%',
-                  bgcolor: 'rgba(255,255,255,0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 12px'
-                }}
-              >
-                <WifiOff size={24} color="white" />
-              </Box>
-              <Typography 
-                variant="h4"
-                sx={{ 
-                  color: 'white',
-                  fontWeight: 700,
-                  textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}
-              >
-                {devices.filter(d => d.attack_status === 'cutting').length}
-              </Typography>
-              <Typography 
-                variant="body2"
-                sx={{ 
-                  color: 'rgba(255,255,255,0.9)',
-                  fontWeight: 500,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                Cut Devices
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-    </CardContent>
-  </Card>
+                    <Grid item xs={12} md={3}>
+                      <Paper
+                        sx={{
+                          p: 3,
+                          textAlign: 'center',
+                          borderRadius: '12px',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'linear-gradient(45deg, #ff9800, #ed6c02)',
+                            opacity: 1
+                          }
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            zIndex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '50%',
+                              bgcolor: 'rgba(255,255,255,0.15)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              margin: '0 auto 12px'
+                            }}
+                          >
+                            <Gauge size={24} color="white" />
+                          </Box>
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              color: 'white',
+                              fontWeight: 700,
+                              textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            {devices.filter(d => d.speed_limit).length}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'rgba(255,255,255,0.9)',
+                              fontWeight: 500,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}
+                          >
+                            Limited Devices
+                          </Typography>
+                        </Box>
+                      </Paper>
+                    </Grid>
+
+                    <Grid item xs={12} md={3}>
+                      <Paper
+                        sx={{
+                          p: 3,
+                          textAlign: 'center',
+                          borderRadius: '12px',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'linear-gradient(45deg, #f44336, #d32f2f)',
+                            opacity: 1
+                          }
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            zIndex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '50%',
+                              bgcolor: 'rgba(255,255,255,0.15)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              margin: '0 auto 12px'
+                            }}
+                          >
+                            <WifiOff size={24} color="white" />
+                          </Box>
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              color: 'white',
+                              fontWeight: 700,
+                              textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            {devices.filter(d => d.attack_status === 'cutting').length}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'rgba(255,255,255,0.9)',
+                              fontWeight: 500,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}
+                          >
+                            Cut Devices
+                          </Typography>
+                        </Box>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
             </Grid>
 
             {/* Bandwidth Chart */}
             <Grid item xs={12}>
-            <Card
-    sx={{
-      borderRadius: '16px',
-      background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9))',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(0,0,0,0.06)',
-      boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-      transition: 'all 0.3s ease',
-      '&:hover': {
-        transform: 'translateY(-2px)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
-      }
-    }}
-  >
-    <CardContent sx={{ p: 3 }}>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        mb: 3
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Activity size={24} className="text-primary" />
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              fontWeight: 700,
-              fontSize: '1.25rem',
-              color: 'text.primary'
-            }}
-          >
-            Network Bandwidth Usage
-          </Typography>
-          <Tooltip 
-            title="Real-time bandwidth monitoring" 
-            arrow
-            placement="right"
-          >
-            <IconButton 
-              size="small" 
-              sx={{ 
-                ml: 1,
-                bgcolor: 'primary.lighter',
-                '&:hover': {
-                  bgcolor: 'primary.light'
-                }
-              }}
-            >
-              <VisibilityIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
+              <Card
+                sx={{
+                  borderRadius: '16px',
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9))',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 3
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Activity size={24} className="text-primary" />
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: '1.25rem',
+                          color: 'text.primary'
+                        }}
+                      >
+                        Network Bandwidth Usage
+                      </Typography>
+                      <Tooltip
+                        title="Real-time bandwidth monitoring"
+                        arrow
+                        placement="right"
+                      >
+                        <IconButton
+                          size="small"
+                          sx={{
+                            ml: 1,
+                            bgcolor: 'primary.lighter',
+                            '&:hover': {
+                              bgcolor: 'primary.light'
+                            }
+                          }}
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1,
-            px: 2,
-            py: 1,
-            borderRadius: '8px',
-            bgcolor: 'primary.lighter'
-          }}>
-            <ArrowUp size={16} className="text-primary" />
-            <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-              Upload
-            </Typography>
-          </Box>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 1,
-            px: 2,
-            py: 1,
-            borderRadius: '8px',
-            bgcolor: 'secondary.lighter'
-          }}>
-            <ArrowDown size={16} className="text-secondary" />
-            <Typography variant="body2" sx={{ fontWeight: 600, color: 'secondary.main' }}>
-              Download
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        px: 2,
+                        py: 1,
+                        borderRadius: '8px',
+                        bgcolor: 'primary.lighter'
+                      }}>
+                        <ArrowUp size={16} className="text-primary" />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                          Upload
+                        </Typography>
+                      </Box>
+                      <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        px: 2,
+                        py: 1,
+                        borderRadius: '8px',
+                        bgcolor: 'secondary.lighter'
+                      }}>
+                        <ArrowDown size={16} className="text-secondary" />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'secondary.main' }}>
+                          Download
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
 
-      <Box 
-        sx={{ 
-          width: '100%', 
-          height: 300,
-          p: 1,
-          bgcolor: 'background.paper',
-          borderRadius: '12px',
-          border: '1px solid rgba(0,0,0,0.04)'
-        }}
-      >
-        <ResponsiveContainer>
-          <LineChart data={chartData}>
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke="rgba(0,0,0,0.06)"
-              vertical={false}
-            />
-            <XAxis
-              dataKey="time"
-              tick={{ fontSize: 12, fill: 'text.secondary' }}
-              interval="preserveStartEnd"
-              axisLine={{ stroke: 'rgba(0,0,0,0.1)' }}
-              tickLine={{ stroke: 'rgba(0,0,0,0.1)' }}
-            />
-            <YAxis
-              tick={{ fontSize: 12, fill: 'text.secondary' }}
-              axisLine={{ stroke: 'rgba(0,0,0,0.1)' }}
-              tickLine={{ stroke: 'rgba(0,0,0,0.1)' }}
-              label={{
-                value: 'Speed (Mbps)',
-                angle: -90,
-                position: 'insideLeft',
-                style: { 
-                  fontSize: 12,
-                  fill: 'text.secondary',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }
-              }}
-            />
-            <RechartsTooltip
-              contentStyle={{
-                backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                border: 'none',
-                borderRadius: '12px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                padding: '12px 16px',
-                fontSize: '12px'
-              }}
-              itemStyle={{
-                padding: '4px 0'
-              }}
-              labelStyle={{
-                fontWeight: 600,
-                marginBottom: '8px'
-              }}
-            />
-            <Legend 
-              verticalAlign="top" 
-              height={0}
-              content={() => null}
-            />
-            <Line
-              type="monotone"
-              dataKey="upload"
-              stroke={theme.palette.primary.main}
-              strokeWidth={2.5}
-              dot={false}
-              activeDot={{ 
-                r: 6, 
-                strokeWidth: 2,
-                fill: theme.palette.primary.main,
-                stroke: theme.palette.primary.light
-              }}
-              name="Upload"
-            />
-            <Line
-              type="monotone"
-              dataKey="download"
-              stroke={theme.palette.secondary.main}
-              strokeWidth={2.5}
-              dot={false}
-              activeDot={{ 
-                r: 6,
-                strokeWidth: 2,
-                fill: theme.palette.secondary.main,
-                stroke: theme.palette.secondary.light
-              }}
-              name="Download"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </Box>
-    </CardContent>
-  </Card>
+                  <Box
+                    sx={{
+                      width: '100%',
+                      height: 300,
+                      p: 1,
+                      bgcolor: 'background.paper',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(0,0,0,0.04)'
+                    }}
+                  >
+                    <ResponsiveContainer>
+                      <LineChart data={chartData}>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="rgba(0,0,0,0.06)"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="time"
+                          tick={{ fontSize: 12, fill: 'text.secondary' }}
+                          interval="preserveStartEnd"
+                          axisLine={{ stroke: 'rgba(0,0,0,0.1)' }}
+                          tickLine={{ stroke: 'rgba(0,0,0,0.1)' }}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12, fill: 'text.secondary' }}
+                          axisLine={{ stroke: 'rgba(0,0,0,0.1)' }}
+                          tickLine={{ stroke: 'rgba(0,0,0,0.1)' }}
+                          label={{
+                            value: 'Speed (Mbps)',
+                            angle: -90,
+                            position: 'insideLeft',
+                            style: {
+                              fontSize: 12,
+                              fill: 'text.secondary',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }
+                          }}
+                        />
+                        <RechartsTooltip
+                          contentStyle={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                            padding: '12px 16px',
+                            fontSize: '12px'
+                          }}
+                          itemStyle={{
+                            padding: '4px 0'
+                          }}
+                          labelStyle={{
+                            fontWeight: 600,
+                            marginBottom: '8px'
+                          }}
+                        />
+                        <Legend
+                          verticalAlign="top"
+                          height={0}
+                          content={() => null}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="upload"
+                          stroke={theme.palette.primary.main}
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{
+                            r: 6,
+                            strokeWidth: 2,
+                            fill: theme.palette.primary.main,
+                            stroke: theme.palette.primary.light
+                          }}
+                          name="Upload"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="download"
+                          stroke={theme.palette.secondary.main}
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{
+                            r: 6,
+                            strokeWidth: 2,
+                            fill: theme.palette.secondary.main,
+                            stroke: theme.palette.secondary.light
+                          }}
+                          name="Download"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
             </Grid>
 
             {/* Floating Action Button */}
